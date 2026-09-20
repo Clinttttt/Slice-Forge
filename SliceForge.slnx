@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/samples/">
+    <Project Path="samples/SliceForge.Sample.Api/SliceForge.Sample.Api.csproj" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/SliceForge.AspNetCore/SliceForge.AspNetCore.csproj" />
+    <Project Path="src/SliceForge.Core/SliceForge.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/SliceForge.AspNetCore.Tests/SliceForge.AspNetCore.Tests.csproj" />
+    <Project Path="tests/SliceForge.Core.Tests/SliceForge.Core.Tests.csproj" />
+  </Folder>
+</Solution>
