@@ -28,9 +28,21 @@ public sealed class ErrorTests
     }
 
     [Fact]
+    public void Constructor_should_reject_null_code()
+    {
+        Assert.Throws<ArgumentNullException>(() => new Error(null!, "Description", ErrorType.Failure));
+    }
+
+    [Fact]
     public void Constructor_should_reject_blank_description()
     {
         Assert.Throws<ArgumentException>(() => new Error("Code", " ", ErrorType.Failure));
+    }
+
+    [Fact]
+    public void Constructor_should_reject_null_description()
+    {
+        Assert.Throws<ArgumentNullException>(() => new Error("Code", null!, ErrorType.Failure));
     }
 
     [Fact]
@@ -57,6 +69,60 @@ public sealed class ErrorTests
             };
 
         Assert.Throws<ArgumentException>(() => new Error("Code", "Description", ErrorType.Failure, validationErrors));
+    }
+
+    [Fact]
+    public void Constructor_should_reject_empty_validation_message_lists()
+    {
+        IReadOnlyDictionary<string, IReadOnlyList<string>> validationErrors =
+            new Dictionary<string, IReadOnlyList<string>>
+            {
+                ["Name"] = Array.Empty<string>()
+            };
+
+        Assert.Throws<ArgumentException>(() =>
+            new Error("Code", "Description", ErrorType.Validation, validationErrors));
+    }
+
+    [Fact]
+    public void Constructor_should_reject_null_validation_messages()
+    {
+        IReadOnlyDictionary<string, IReadOnlyList<string>> validationErrors =
+            new Dictionary<string, IReadOnlyList<string>>
+            {
+                ["Name"] = new string[] { null! }
+            };
+
+        Assert.Throws<ArgumentNullException>(() =>
+            new Error("Code", "Description", ErrorType.Validation, validationErrors));
+    }
+
+    [Fact]
+    public void Constructor_should_reject_blank_validation_messages()
+    {
+        IReadOnlyDictionary<string, IReadOnlyList<string>> validationErrors =
+            new Dictionary<string, IReadOnlyList<string>>
+            {
+                ["Name"] = new[] { " " }
+            };
+
+        Assert.Throws<ArgumentException>(() =>
+            new Error("Code", "Description", ErrorType.Validation, validationErrors));
+    }
+
+    [Fact]
+    public void Constructor_should_allow_empty_validation_error_keys()
+    {
+        Error error = new(
+            "Code",
+            "Description",
+            ErrorType.Validation,
+            new Dictionary<string, IReadOnlyList<string>>
+            {
+                [string.Empty] = new[] { "The request is invalid." }
+            });
+
+        Assert.Equal("The request is invalid.", error.ValidationErrors[string.Empty][0]);
     }
 
     [Fact]
@@ -89,5 +155,41 @@ public sealed class ErrorTests
 
         Assert.Throws<NotSupportedException>(() =>
             ((IList<string>)error.ValidationErrors["Name"]).Add("Another message."));
+    }
+
+    [Fact]
+    public void Validation_error_dictionary_should_be_read_only()
+    {
+        Error error = new(
+            "Code",
+            "Description",
+            ErrorType.Validation,
+            new Dictionary<string, IReadOnlyList<string>>
+            {
+                ["Name"] = new[] { "Name is required." }
+            });
+
+        IDictionary<string, IReadOnlyList<string>> validationErrors =
+            (IDictionary<string, IReadOnlyList<string>>)error.ValidationErrors;
+
+        Assert.True(validationErrors.IsReadOnly);
+        Assert.Throws<NotSupportedException>(() =>
+            validationErrors.Add("Email", new[] { "Email is invalid." }));
+    }
+
+    [Fact]
+    public void Error_type_should_contain_exactly_the_approved_members()
+    {
+        string[] expectedMembers =
+        [
+            "Failure",
+            "Validation",
+            "NotFound",
+            "Conflict",
+            "Unauthorized",
+            "Forbidden"
+        ];
+
+        Assert.Equal(expectedMembers, Enum.GetNames<ErrorType>());
     }
 }

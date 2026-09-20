@@ -26,12 +26,12 @@ public enum ErrorType
     Conflict,
 
     /// <summary>
-    /// Represents an operation that requires authorization.
+    /// Represents an outcome where the caller is unauthenticated or supplied invalid credentials.
     /// </summary>
     Unauthorized,
 
     /// <summary>
-    /// Represents an operation that the caller is not permitted to perform.
+    /// Represents an outcome where the caller is authenticated but not permitted to perform the operation.
     /// </summary>
     Forbidden
 }
