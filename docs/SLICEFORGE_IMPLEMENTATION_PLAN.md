@@ -1294,27 +1294,36 @@ ICommand<Result<Guid>>
 
 for consumer-facing declaration syntax.
 
-## Dependency review
+## Dependency decision
 
-Before adding MediatR:
+Milestone 2 owns the SliceForge messaging contracts directly. The Core project
+must not reference MediatR or another mediator library, and these interfaces
+must not inherit from third-party request or handler contracts.
 
-- confirm the current stable package version,
-- confirm its current license,
-- document the dependency decision,
-- centralize the package version,
-- do not duplicate handler scanning.
+MediatR 14.2.0 is technically compatible with .NET 10, but its current
+Reciprocal Public License 1.5/commercial licensing model and the resulting
+public-API coupling make it unsuitable as a mandatory SliceForge.Core
+dependency without a separate product and licensing decision.
 
-Do not blindly copy old dependency assumptions.
+MediatR may be evaluated later as an optional adapter outside Core. Any such
+adapter is a separate milestone and must not introduce MediatR into these
+public contracts. Do not add a dispatcher, sender, DI registration, reflection
+or assembly scanning as part of Milestone 2.
 
 ### Milestone 2 tests
 
-At minimum test compile-time and runtime expectations around:
+At minimum test the SliceForge-owned compile-time and runtime expectations
+around:
 
-- commands returning `Result`,
-- commands returning `Result<T>`,
-- queries returning `Result<T>`,
-- handler resolution,
-- exactly one handler per message in the sample architecture.
+- command and query marker relationships,
+- handler response signatures,
+- success and failure result pass-through,
+- nullable response payloads,
+- cancellation-token acceptance,
+- approved variance and generic constraints.
+
+Runtime handler resolution and exactly-one-handler integration tests are
+deferred until a future dispatch/adapter milestone.
 
 Suggested commit:
 
