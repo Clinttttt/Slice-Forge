@@ -105,19 +105,18 @@ SliceForge must be:
 - **Not tied to one application name**
 - **Pleasant for both beginners and experienced .NET developers**
 
-The desired API should support both:
+The current runtime composition API is explicit:
 
 ```csharp
-builder.Services.AddSliceForge<ApplicationAssembly>();
+builder.Services.AddSliceForgeRuntime();
 ```
 
-and advanced composition such as:
+Validation is added explicitly when needed:
 
 ```csharp
 builder.Services
-    .AddSliceForgeCore<ApplicationAssembly>()
-    .AddSliceForgeValidation()
-    .AddSliceForgeEndpoints();
+    .AddSliceForgeValidator<CreateUserCommand, CreateUserValidator>()
+    .AddSliceForgeValidation();
 ```
 
 Do not implement both immediately. Establish the internal boundaries first.
@@ -222,14 +221,10 @@ Use the simplest design that correctly expresses the current requirement.
 Prefer:
 
 ```csharp
-public static IServiceCollection AddSliceForgeCore<TAssemblyMarker>(
+public static IServiceCollection AddSliceForgeValidator<TMessage, TValidator>(
     this IServiceCollection services)
 {
     ArgumentNullException.ThrowIfNull(services);
-
-    Assembly assembly = typeof(TAssemblyMarker).Assembly;
-
-    // registration
 
     return services;
 }
@@ -279,7 +274,7 @@ Examples:
 ICommand
 ICommandHandler
 Result<T>
-ValidationBehavior
+ValidationMessageSender
 SliceForgeOptions
 AddSliceForge
 MapSliceForgeEndpoints
@@ -337,10 +332,10 @@ Do not create giant classes.
 Examples:
 
 ```text
-ValidationBehavior
+ValidationMessageSender
 → validation orchestration only
 
-LoggingBehavior
+ObservabilityMessageSender
 → message-level logging/telemetry only
 
 EndpointExtensions
@@ -353,7 +348,6 @@ ResultHttpExtensions
 Do not make one extension class configure:
 
 ```text
-MediatR
 validation
 OpenTelemetry
 authentication
@@ -538,11 +532,9 @@ High-level convenience methods must delegate to clearly named lower-level method
 Example conceptual structure:
 
 ```csharp
-AddSliceForge<T>()
-    ↓
-AddSliceForgeCore<T>()
+AddSliceForgeRuntime()
+AddSliceForgeValidator<TMessage, TValidator>()
 AddSliceForgeValidation()
-AddSliceForgeEndpoints<T>()
 ```
 
 Do not silently add unrelated features such as persistence, authentication, caching, or cloud integrations.
@@ -1152,7 +1144,8 @@ chore: establish SliceForge repository foundation
 
 ## Goal
 
-Implement the result/error primitives before introducing MediatR, HTTP, logging, or validation.
+Core result/error primitives are complete. Later capabilities must remain
+outside Core and must not introduce MediatR or transport concerns into it.
 
 Suggested structure:
 
@@ -1307,8 +1300,8 @@ dependency without a separate product and licensing decision.
 
 MediatR may be evaluated later as an optional adapter outside Core. Any such
 adapter is a separate milestone and must not introduce MediatR into these
-public contracts. Do not add a dispatcher, sender, DI registration, reflection
-or assembly scanning as part of Milestone 2.
+public contracts. This completed Milestone 2 gate did not add a dispatcher,
+sender, DI registration, reflection, or assembly scanning.
 
 ### Milestone 2 tests
 
@@ -1333,88 +1326,91 @@ feat(core): introduce messaging abstractions
 
 ---
 
-# 5. Milestone 3 — Validation Pipeline
+# 5. Milestone 4 — Validation Decoration
 
 ## Goal
 
-Move reusable FluentValidation pipeline behavior into SliceForge.
-
-Suggested structure:
+Keep validation outside Core and Runtime by decorating the scoped
+`IMessageSender` from `SliceForge.Validation`.
 
 ```text
-src/SliceForge.Core/
-├── Behaviors/
-│   └── ValidationBehavior.cs
-└── DependencyInjection/
-    └── ServiceCollectionExtensions.cs
+SliceForge.Validation
+    → SliceForge.Runtime
+        → SliceForge.Core
 ```
+
+FluentValidation is optional and is referenced only by the Validation package.
+Validators are registered explicitly with
+`AddSliceForgeValidator<TMessage, TValidator>()`; assembly scanning and
+base/interface discovery are not used.
 
 ## 5.1 Required behavior semantics
 
-Validation is an expected application failure.
-
-Therefore:
-
-```text
-Invalid request
-      ↓
-ValidationBehavior
-      ↓
-failed Result
-```
-
-Not:
+Validation route execution returns an internal `Error?`. The sender decorator
+constructs the result shape required by the sender overload:
 
 ```text
-ValidationException
+ICommand    → Result.Failure(error)
+ICommand<T> → Result<T>.Failure(error)
+IQuery<T>   → Result<T>.Failure(error)
 ```
 
-unless the architecture is deliberately changed and documented.
+Invalid requests return `ErrorType.Validation` with code
+`Validation.Failed`, skip the inner sender, and therefore skip the handler.
+Validator exceptions and cancellation propagate as exceptions. They are never
+converted into expected Result failures.
 
 ## 5.2 Important regression invariants
 
 Tests must guarantee:
 
 ```text
-No validator
-→ handler executes exactly once
+No SliceForge validator route
+→ inner sender executes exactly once
 
 Valid request
-→ handler executes exactly once
+→ inner sender executes exactly once
 
 Invalid request
-→ handler executes zero times
+→ inner sender executes zero times
 
 Multiple validators
-→ all relevant failures are aggregated
+→ sequential registration order and aggregated failures
 
-Duplicate error messages
-→ no accidental duplication
+Duplicate property/message pairs
+→ removed while first-seen order is preserved
 
-Cancellation
-→ propagated correctly
+Object-level failure
+→ empty property name preserved
+
+Cancellation or validator exception
+→ propagated without invoking the handler
 ```
 
-If internal validators are supported, explicitly test discovery of internal types.
+Validation metadata is cached immutably. Validator instances are resolved from
+the current DI scope at execution time and are transient by default.
 
-## 5.3 Pipeline ordering
+## 5.3 Sender decoration ordering
 
-Initial intended ordering once logging is added:
+Future observability should use the same explicit sender-decoration mechanism:
 
 ```text
-LoggingBehavior
+ObservabilityMessageSender
       ↓
-ValidationBehavior
+ValidationMessageSender
+      ↓
+DefaultMessageSender
       ↓
 Handler
 ```
 
-Logging should eventually remain outside validation so rejected requests can still be observed.
+This is intentionally not a public pipeline-stage abstraction or a renamed
+MediatR `IPipelineBehavior`.
 
 Suggested commit:
 
 ```text
-feat(core): add validation pipeline behavior
+feat(validation): add sender validation decorator
 ```
 
 ---
@@ -1563,7 +1559,10 @@ Aim toward:
 ```csharp
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddSliceForge<ApplicationAssembly>();
+builder.Services
+    .AddSliceForgeRuntime()
+    .AddSliceForgeValidator<CreateUserCommand, CreateUserValidator>()
+    .AddSliceForgeValidation();
 
 var app = builder.Build();
 
@@ -1616,7 +1615,7 @@ SliceForge.Observability
 
 Do not split it into a new package until dependency pressure justifies the split.
 
-## 8.1 LoggingBehavior
+## 8.1 ObservabilityMessageSender
 
 Required semantics:
 
@@ -1686,12 +1685,9 @@ Support sensible defaults without forcing every capability.
 Target concept:
 
 ```csharp
-builder.Services.AddSliceForge<ApplicationAssembly>(options =>
-{
-    options.Validation.Enabled = true;
-    options.Endpoints.Enabled = true;
-    options.Logging.Enabled = true;
-});
+builder.Services
+    .AddSliceForgeRuntime()
+    .AddSliceForgeValidation();
 ```
 
 But avoid creating dozens of meaningless booleans.
@@ -1927,8 +1923,8 @@ Preset
 ○ Custom
 
 Architecture
-● Vertical Slice + MediatR
-○ Vertical Slice
+● Vertical Slice
+○ Vertical Slice with an optional mediator adapter
 
 Validation
 ● FluentValidation
@@ -1947,7 +1943,7 @@ Testing
 
 Project          DispatchFlow
 Framework        .NET 10
-Architecture     Vertical Slice + MediatR
+Architecture     Vertical Slice
 Validation       FluentValidation
 Observability    OpenTelemetry
 Testing          xUnit
@@ -2035,8 +2031,8 @@ ICommand.cs
 IQuery.cs
 ICommandHandler.cs
 IQueryHandler.cs
-ValidationBehavior.cs
-LoggingBehavior.cs
+ValidationMessageSender.cs
+ObservabilityMessageSender.cs
 IEndpoint.cs
 EndpointExtensions.cs
 common Result → HTTP mapping
@@ -2093,10 +2089,9 @@ Prefer conventional .NET names.
 Good:
 
 ```csharp
-AddSliceForge<TAssemblyMarker>()
-AddSliceForgeCore<TAssemblyMarker>()
+AddSliceForgeRuntime()
+AddSliceForgeValidator<TMessage, TValidator>()
 AddSliceForgeValidation()
-AddSliceForgeEndpoints<TAssemblyMarker>()
 MapSliceForgeEndpoints()
 ```
 
@@ -2195,7 +2190,7 @@ feat(core): introduce error and result primitives
 
 feat(core): introduce messaging abstractions
 
-feat(core): add validation pipeline
+feat(validation): add sender validation decorator
 
 feat(aspnetcore): introduce endpoint discovery
 
@@ -2205,7 +2200,7 @@ feat(aspnetcore): add problem details integration
 
 feat(sample): add vertical slice sample API
 
-feat(observability): add request pipeline telemetry
+feat(observability): add sender observability decorator
 
 feat(packaging): configure preview NuGet packages
 
@@ -2229,11 +2224,12 @@ for meaningful project history.
 
 ---
 
-# 20. First Agent Session — Exact Scope
+# 20. First Agent Session — Historical Foundation Scope
 
 For the first implementation session, the agent should **only perform Milestone 0**.
 
-Do not implement MediatR, FluentValidation, Result, endpoint discovery, CLI, or templates yet.
+This section records the original foundation-only session. It is historical;
+the current milestone order and package boundaries below are authoritative.
 
 ## Agent task
 
@@ -2260,13 +2256,13 @@ Do not begin Milestone 1 without explicit approval.
 
 ---
 
-# 21. Next Session After Foundation Approval
+# 21. Historical Foundation Sequence
 
-After Milestone 0 is reviewed and accepted:
+The original post-foundation sequence was:
 
 **Milestone 1:** implement only `Error`, `ErrorType`, `Result`, `Result<T>`, and their tests.
 
-No MediatR yet.
+MediatR was intentionally excluded from the original Core foundation.
 
 This keeps the progression:
 
@@ -2277,7 +2273,9 @@ Result model
     ↓
 Messaging
     ↓
-Validation
+Runtime
+    ↓
+Validation decoration
     ↓
 ASP.NET integration
     ↓
@@ -2297,3 +2295,26 @@ Real-world adoption
 ```
 
 That is the intended SliceForge implementation path.
+
+## Current milestone order after Validation
+
+The completed order is:
+
+1. Repository foundation
+2. Core result and error model
+3. SliceForge-owned messaging contracts
+4. Runtime execution with explicit handler registration
+5. Validation decoration
+
+Runtime is separate from Core and uses exact concrete-message routing. It does
+not use MediatR, assembly scanning, polymorphic discovery, or a public
+pipeline abstraction. MediatR remains only a possible future optional adapter
+requiring separate product and licensing approval.
+
+The earlier illustrative CLI preset that coupled the architecture to a
+mediator is superseded. Future presets must describe `Vertical Slice` and may
+offer an optional mediator adapter only after separate product and licensing approval.
+The Runtime milestone is the execution foundation. Validation decorates its
+sender and must not assume a pre-existing MediatR pipeline or reintroduce
+mediator types into Core. Historical references above preserve the original
+decision trail; they are not implementation instructions.

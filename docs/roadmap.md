@@ -6,8 +6,8 @@ The implementation is intentionally incremental:
 2. Core result and error model — completed
 3. Messaging abstractions — completed
 4. Runtime execution and explicit handler registration — completed
-5. Validation — next
-6. ASP.NET Core integration
+5. Validation — completed
+6. ASP.NET Core integration — next
 7. Sample consumer API
 8. Logging and observability
 9. Configuration and package validation
@@ -16,4 +16,6 @@ The implementation is intentionally incremental:
 12. Diagnostics
 13. Real-world adoption
 
-The current milestone is the Validation design/implementation milestone. Runtime is intentionally separate from Core and does not yet include validation, logging, decorators, or mediator integration.
+The current milestone is ASP.NET Core integration. Validation is an optional
+sender decorator outside Core and Runtime; Runtime itself remains free of
+validation, logging, and mediator dependencies.
