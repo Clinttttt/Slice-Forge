@@ -7,8 +7,8 @@ The implementation is intentionally incremental:
 3. Messaging abstractions — completed
 4. Runtime execution and explicit handler registration — completed
 5. Validation — completed
-6. ASP.NET Core integration — next
-7. Sample consumer API
+6. ASP.NET Core Result mapping — completed
+7. Sample consumer API — next
 8. Logging and observability
 9. Configuration and package validation
 10. `dotnet new` template
@@ -16,6 +16,9 @@ The implementation is intentionally incremental:
 12. Diagnostics
 13. Real-world adoption
 
-The current milestone is ASP.NET Core integration. Validation is an optional
-sender decorator outside Core and Runtime; Runtime itself remains free of
-validation, logging, and mediator dependencies.
+Milestone 5 adds Core-only Result-to-HTTP mapping in `SliceForge.AspNetCore`.
+Consumers own successful response semantics, explicit endpoint mapping,
+authentication configuration, and ASP.NET Core exception middleware setup.
+Endpoint discovery remains deferred. Validation is an optional sender
+decorator outside Core and Runtime; Runtime itself remains free of validation,
+logging, and mediator dependencies.

@@ -67,12 +67,11 @@ SliceForge may own:
 
 - Result primitives
 - Command/query abstractions
-- Pipeline behaviors
-- FluentValidation registration
-- Endpoint discovery
-- HTTP result mapping
-- ProblemDetails conventions
-- Exception handling infrastructure
+- explicit Runtime routing
+- optional FluentValidation sender decoration
+- Result-to-HTTP mapping
+- validation ProblemDetails mapping
+- integration guidance for ASP.NET Core exception handling
 - Logging/tracing integration
 - Diagnostics
 - Project scaffolding
@@ -105,7 +104,7 @@ SliceForge must be:
 - **Not tied to one application name**
 - **Pleasant for both beginners and experienced .NET developers**
 
-The current runtime composition API is explicit:
+Runtime and optional Validation are composed explicitly:
 
 ```csharp
 builder.Services.AddSliceForgeRuntime();
@@ -119,7 +118,9 @@ builder.Services
     .AddSliceForgeValidation();
 ```
 
-Do not implement both immediately. Establish the internal boundaries first.
+ASP.NET integration maps Core Results only. It does not compose Runtime or
+Validation and does not own consumer endpoint registration or exception
+middleware configuration.
 
 ---
 
@@ -158,10 +159,12 @@ SliceForge.Authentication
 
 Start with only the packages justified by actual dependency boundaries.
 
-Initial package set:
+Current package set:
 
 ```text
 SliceForge.Core
+SliceForge.Runtime
+SliceForge.Validation (optional)
 SliceForge.AspNetCore
 ```
 
@@ -192,20 +195,22 @@ Core should not know about:
 - authentication middleware
 - HTTP status codes
 
-`SliceForge.AspNetCore` may depend on `SliceForge.Core`.
+`SliceForge.AspNetCore` may depend on `SliceForge.Core` and the
+`Microsoft.AspNetCore.App` shared framework. It remains a class library using
+`Microsoft.NET.Sdk` with an explicit framework reference.
 
 Dependency direction:
 
 ```text
 Consumer Application
-        │
-        ├─────────────► SliceForge.AspNetCore
-        │                       │
-        │                       ▼
-        └────────────────► SliceForge.Core
+   ├──► SliceForge.AspNetCore ──► SliceForge.Core
+   │       └── Microsoft.AspNetCore.App framework reference
+   ├──► SliceForge.Runtime ─────► SliceForge.Core
+   └──► SliceForge.Validation ──► SliceForge.Runtime
 ```
 
-Never reverse this relationship.
+`SliceForge.AspNetCore` must not reference Runtime or Validation. Core must not
+reference any ASP.NET Core API. Never reverse these relationships.
 
 
 ## 1.5 Engineering Standards — Mandatory Agent Guardrails
@@ -277,8 +282,12 @@ Result<T>
 ValidationMessageSender
 SliceForgeOptions
 AddSliceForge
-MapSliceForgeEndpoints
+ToHttpResult
 ```
+
+`ToHttpResult` is the approved ASP.NET integration extension. Consumer
+applications map their own endpoints explicitly; SliceForge does not discover
+or scan endpoints.
 
 Avoid:
 
@@ -317,7 +326,6 @@ Prefer:
 Messaging/
 Results/
 Behaviors/
-Endpoints/
 ProblemDetails/
 Diagnostics/
 DependencyInjection/
@@ -338,11 +346,8 @@ ValidationMessageSender
 ObservabilityMessageSender
 → message-level logging/telemetry only
 
-EndpointExtensions
-→ endpoint registration/mapping only
-
 ResultHttpExtensions
-→ Result → HTTP translation only
+→ expected Result failure to HTTP translation; success remains consumer-owned
 ```
 
 Do not make one extension class configure:
@@ -504,7 +509,9 @@ Avoid duplicate exception logs. One layer should own exception logging.
 
 ### K. Reflection rules
 
-Reflection is allowed only when it provides clear framework value, such as endpoint or handler discovery.
+Reflection is not part of the current execution or endpoint model. Runtime
+routes and consumer endpoints are registered explicitly; do not add assembly
+scanning or reflection-based discovery without a separately approved feature.
 
 When reflection is introduced:
 
@@ -1415,117 +1422,105 @@ feat(validation): add sender validation decorator
 
 ---
 
-# 6. Milestone 4 — ASP.NET Core Integration
+# 6. Milestone 5 — ASP.NET Core Integration (completed)
 
 ## Goal
 
-Create HTTP-specific functionality without contaminating Core.
+Map SliceForge Results to ASP.NET Core HTTP results without contaminating Core.
+SliceForge owns expected Result failure mapping; consumer applications own
+successful HTTP semantics, endpoint mapping, authentication configuration,
+and exception middleware configuration.
 
-Suggested structure:
+The project remains a class library using `Microsoft.NET.Sdk` and references
+`SliceForge.Core` plus the `Microsoft.AspNetCore.App` shared framework. It must
+not reference Runtime, Validation, FluentValidation, or MediatR.
 
-```text
-src/SliceForge.AspNetCore/
-│
-├── Endpoints/
-│   ├── IEndpoint.cs
-│   └── EndpointExtensions.cs
-│
-├── Results/
-│   └── ResultHttpExtensions.cs
-│
-├── ProblemDetails/
-│   └── ProblemDetailsExtensions.cs
-│
-├── Exceptions/
-│   └── GlobalExceptionHandler.cs
-│
-├── DependencyInjection/
-│   └── ServiceCollectionExtensions.cs
-│
-└── Options/
-```
-
-## 6.1 Endpoint abstraction
-
-Target:
+The public mapping surface is limited to the two success-callback overloads:
 
 ```csharp
-public interface IEndpoint
+namespace SliceForge.AspNetCore.Results;
+
+public static class ResultHttpExtensions
 {
-    void MapEndpoint(IEndpointRouteBuilder app);
+    public static IResult ToHttpResult(
+        this Result result,
+        Func<IResult> onSuccess);
+
+    public static IResult ToHttpResult<TResponse>(
+        this Result<TResponse> result,
+        Func<TResponse, IResult> onSuccess);
 }
 ```
 
-Provide:
+Both overloads reject null arguments. A successful result invokes its callback
+exactly once and returns that exact `IResult`; a null callback result throws
+`InvalidOperationException`. Callback exceptions propagate unchanged. The
+typed overload passes the exact successful value, including null when
+permitted by `TResponse`.
+
+## 6.1 Expected Result failure mapping
+
+| `ErrorType` | HTTP response |
+| --- | --- |
+| `Failure` | 400 ProblemDetails |
+| `Validation` | 400 `HttpValidationProblemDetails` |
+| `NotFound` | 404 ProblemDetails |
+| `Conflict` | 409 ProblemDetails |
+| `Unauthorized` | ASP.NET Core `Results.Challenge()` |
+| `Forbidden` | ASP.NET Core `Results.Forbid()` |
+
+For ordinary ProblemDetails, expose the mapped `status`, `Error.Description`
+as `detail`, and `Error.Code` as the `code` extension. Do not serialize the
+Core `Error`, `Error.Type`, exception details, or implementation internals.
+
+Validation mapping uses the Core validation groups as the ASP.NET
+`Errors` dictionary (`string[]` values), preserves empty property keys for
+object-level failures, and removes duplicate messages within each property
+while preserving first-seen order. The Core collections are never mutated.
+The response retains `Error.Description` as `detail` and `Error.Code` as the
+`code` extension.
+
+Unauthorized and Forbidden are authentication results, not ProblemDetails.
+SliceForge calls `Results.Challenge()` and `Results.Forbid()` without choosing
+an authentication scheme or writing authentication headers. The consuming
+application configures authentication. In particular, it must configure an
+applicable challenge for a 401 response.
+
+## 6.2 Unexpected exceptions and endpoint ownership
+
+HTTP 500 is reserved for unexpected exceptions. They remain exceptions and
+must not be converted to `Result.Failure`. Consumer applications configure
+ASP.NET Core directly:
 
 ```csharp
-services.AddSliceForgeEndpoints<TAssemblyMarker>();
+builder.Services.AddProblemDetails();
+app.UseExceptionHandler();
 ```
 
-and:
+SliceForge does not provide `AddSliceForgeAspNetCore()`, a custom
+`IExceptionHandler`, or a duplicate exception logger. The framework exception
+middleware owns unexpected-exception handling and logging.
 
-```csharp
-app.MapSliceForgeEndpoints();
-```
+Consumer endpoints explicitly map their routes, inject `IMessageSender` if
+needed, and choose success responses through `ToHttpResult`. Endpoint
+abstractions, endpoint discovery, assembly scanning, and Runtime integration
+are deferred; the Sample API must demonstrate a real need before any such
+capability is reconsidered.
 
-Do not silently scan arbitrary assemblies.
-
-Assembly selection should be explicit or have a documented default.
-
-## 6.2 Result → HTTP mapping
-
-HTTP mapping lives here.
-
-Example conceptual mapping:
-
-```text
-Validation   → 400
-Unauthorized → 401
-Forbidden    → 403
-NotFound     → 404
-Conflict     → 409
-Failure      → appropriate documented fallback
-```
-
-Do not make domain/core types depend on status codes.
-
-## 6.3 ProblemDetails
-
-Provide one consistent API error shape.
-
-Include trace correlation later when observability exists.
-
-## 6.4 Exception handling
-
-Unexpected failures:
-
-```text
-Unhandled Exception
-      ↓
-Global Exception Handler
-      ↓
-ProblemDetails
-```
-
-Expected failures:
-
-```text
-Result.Failure
-      ↓
-Result HTTP mapping
-```
-
-Do not mix these paths.
+ASP.NET tests cover callback behavior, all Result mappings, validation
+grouping/deduplication/object-level errors, and execution of the configured
+authentication challenge/forbid. Framework exception middleware is configured
+by consumers and is not reimplemented by SliceForge.
 
 Suggested commit:
 
 ```text
-feat(aspnetcore): add endpoint discovery and result mapping
+feat(aspnetcore): add result HTTP mapping
 ```
 
 ---
 
-# 7. Milestone 5 — Sample API
+# 7. Milestone 6 — Sample API
 
 ## Goal
 
@@ -1563,11 +1558,22 @@ builder.Services
     .AddSliceForgeRuntime()
     .AddSliceForgeValidator<CreateUserCommand, CreateUserValidator>()
     .AddSliceForgeValidation();
+builder.Services.AddProblemDetails();
 
 var app = builder.Build();
 
 app.UseExceptionHandler();
-app.MapSliceForgeEndpoints();
+app.MapPost("/users", async (
+    CreateUserRequest request,
+    IMessageSender sender,
+    CancellationToken cancellationToken) =>
+{
+    Result<Guid> result = await sender.SendCommandAsync<Guid>(
+        new CreateUserCommand(request.Name),
+        cancellationToken);
+
+    return result.ToHttpResult(id => Results.Created($"/users/{id}", new { id }));
+});
 
 app.Run();
 ```
@@ -1581,7 +1587,7 @@ Prioritize:
 - explicit behavior,
 - minimal hidden magic.
 
-### Milestone 5 exit condition
+### Milestone 6 exit condition
 
 A developer can understand the package by opening the sample and following one vertical slice end-to-end.
 
@@ -1593,7 +1599,7 @@ feat(sample): add end-to-end SliceForge consumer API
 
 ---
 
-# 8. Milestone 6 — Logging & Observability
+# 8. Milestone 7 — Logging & Observability
 
 Do this only after the application pipeline is stable.
 
@@ -1676,7 +1682,7 @@ feat(observability): add structured pipeline telemetry
 
 ---
 
-# 9. Milestone 7 — Configuration Model
+# 9. Milestone 8 — Configuration Model
 
 ## Goal
 
@@ -1699,17 +1705,18 @@ Potential model:
 ```text
 SliceForgeOptions
 ├── Validation
-├── Endpoints
 ├── Logging
 ├── Observability
 └── Diagnostics
 ```
 
-Do not place database/authentication configuration in the core SliceForge options.
+Do not add endpoint options for endpoint discovery, which SliceForge does not
+provide. Do not place database/authentication configuration in SliceForge
+options; those remain consumer-owned.
 
 ---
 
-# 10. Milestone 8 — Package Validation
+# 10. Milestone 9 — Package Validation
 
 Before templates or CLI, test actual NuGet consumption.
 
@@ -1760,7 +1767,7 @@ Do not consider packaging complete until installation works without project refe
 
 ---
 
-# 11. Milestone 9 — `dotnet new` Template
+# 11. Milestone 10 — `dotnet new` Template
 
 ## Goal
 
@@ -1836,7 +1843,7 @@ It must not contain a second independent copy of core infrastructure.
 
 ---
 
-# 12. Milestone 10 — Interactive CLI
+# 12. Milestone 11 — Interactive CLI
 
 ## Goal
 
@@ -1924,7 +1931,7 @@ Preset
 
 Architecture
 ● Vertical Slice
-○ Vertical Slice with an optional mediator adapter
+○ Vertical Slice with a separately approved optional mediator adapter
 
 Validation
 ● FluentValidation
@@ -1983,7 +1990,7 @@ They must not become hidden behavior impossible for the user to inspect.
 
 ---
 
-# 13. Milestone 11 — SliceForge Doctor / Diagnostics
+# 13. Milestone 12 — SliceForge Doctor / Diagnostics
 
 This is a later differentiating feature.
 
@@ -1998,17 +2005,19 @@ Potential checks:
 ```text
 ✓ SDK supported
 ✓ SliceForge packages compatible
-✓ commands discovered
-✓ queries discovered
-✓ handlers discovered
-✓ validators discovered
-✓ endpoints discovered
+✓ command routes explicitly registered
+✓ query routes explicitly registered
+✓ handler routes explicitly registered
+✓ SliceForge validators explicitly registered
 
 ✗ command has no handler
 ✗ message has multiple handlers
-⚠ internal validator scanning disabled
+⚠ validation enabled without SliceForge validators
 ⚠ optional feature configured but unused
 ```
+
+Endpoint discovery is not a SliceForge diagnostic because consumer endpoints
+are mapped explicitly and are not registered through SliceForge scanning.
 
 Startup diagnostics may also become available programmatically.
 
@@ -2016,7 +2025,7 @@ Do not build this before the basic package and template are stable.
 
 ---
 
-# 14. Milestone 12 — Real-World Adoption
+# 14. Milestone 13 — Real-World Adoption
 
 Use a real project such as DispatchFlow as a consumer.
 
@@ -2033,8 +2042,6 @@ ICommandHandler.cs
 IQueryHandler.cs
 ValidationMessageSender.cs
 ObservabilityMessageSender.cs
-IEndpoint.cs
-EndpointExtensions.cs
 common Result → HTTP mapping
 ```
 
@@ -2092,7 +2099,7 @@ Good:
 AddSliceForgeRuntime()
 AddSliceForgeValidator<TMessage, TValidator>()
 AddSliceForgeValidation()
-MapSliceForgeEndpoints()
+ToHttpResult()
 ```
 
 Avoid excessive branding:
@@ -2127,9 +2134,7 @@ SliceForge.Behaviors
 SliceForge.DependencyInjection
 
 SliceForge.AspNetCore
-SliceForge.AspNetCore.Endpoints
 SliceForge.AspNetCore.Results
-SliceForge.AspNetCore.ProblemDetails
 ```
 
 Consumer application:
@@ -2192,11 +2197,7 @@ feat(core): introduce messaging abstractions
 
 feat(validation): add sender validation decorator
 
-feat(aspnetcore): introduce endpoint discovery
-
 feat(aspnetcore): add result HTTP mapping
-
-feat(aspnetcore): add problem details integration
 
 feat(sample): add vertical slice sample API
 
@@ -2296,15 +2297,16 @@ Real-world adoption
 
 That is the intended SliceForge implementation path.
 
-## Current milestone order after Validation
+## Current milestone status and next step
 
-The completed order is:
+Completed milestones:
 
-1. Repository foundation
-2. Core result and error model
-3. SliceForge-owned messaging contracts
-4. Runtime execution with explicit handler registration
-5. Validation decoration
+- Milestone 0: repository foundation
+- Milestone 1: Core result and error model
+- Milestone 2: SliceForge-owned messaging contracts
+- Milestone 3: Runtime execution with explicit handler registration
+- Milestone 4: optional Validation sender decoration
+- Milestone 5: ASP.NET Core Result mapping
 
 Runtime is separate from Core and uses exact concrete-message routing. It does
 not use MediatR, assembly scanning, polymorphic discovery, or a public
@@ -2318,3 +2320,9 @@ The Runtime milestone is the execution foundation. Validation decorates its
 sender and must not assume a pre-existing MediatR pipeline or reintroduce
 mediator types into Core. Historical references above preserve the original
 decision trail; they are not implementation instructions.
+
+The next milestone is the Sample API. It should map routes explicitly, use
+`IMessageSender` from the consumer application, call `ToHttpResult` with
+consumer-chosen success responses, and configure `AddProblemDetails()` plus
+`UseExceptionHandler()` directly. It must not add endpoint discovery or make
+`SliceForge.AspNetCore` depend on Runtime.

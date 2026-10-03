@@ -5,24 +5,22 @@ SliceForge owns reusable application plumbing; consumer applications own busines
 ```text
 Consumer application
         |
-        +--> SliceForge.AspNetCore
-        |          |
-        |          +--> SliceForge.Core
-        |
-        +--> SliceForge.Runtime
-        |          |
-        |          +--> SliceForge.Core
-        |
-        +--> SliceForge.Validation
-        |          |
-        |          +--> SliceForge.Runtime
-        |
-        +--> SliceForge.Core
+        ├── SliceForge.AspNetCore ──> SliceForge.Core
+        │       └── Microsoft.AspNetCore.App framework reference
+        ├── SliceForge.Runtime ─────> SliceForge.Core
+        ├── SliceForge.Validation ──> SliceForge.Runtime (optional)
+        └── SliceForge.Core
 ```
 
-`SliceForge.Core` must remain independent of ASP.NET Core and dependency injection. It must not reference HTTP status codes, `HttpContext`, minimal API result types, ASP.NET middleware, or mediator libraries. ASP.NET-specific endpoint, error, and HTTP mapping capabilities belong in `SliceForge.AspNetCore`.
+`SliceForge.Core` must remain independent of ASP.NET Core and dependency injection. It must not reference HTTP status codes, `HttpContext`, minimal API result types, ASP.NET middleware, or mediator libraries. Result-to-HTTP mapping belongs in `SliceForge.AspNetCore`; consumer applications own endpoint mapping and discovery is deferred.
 
 `SliceForge.Validation` is optional and decorates the scoped Runtime sender with
 explicit, exact-concrete-type FluentValidation routes. Runtime remains free of
-validation dependencies, and ASP.NET Core does not reference Runtime until an
-ASP.NET feature consumes `IMessageSender`.
+validation dependencies.
+
+`SliceForge.AspNetCore` maps Core Results to ASP.NET Core `IResult` values. It
+owns expected failure mapping while consumers choose success responses, map
+endpoints explicitly, configure authentication, and register framework-owned
+exception handling. The project references Core and the ASP.NET Core shared
+framework only; it does not reference Runtime or Validation. Endpoint discovery
+is deferred unless the Sample API demonstrates a concrete need.
