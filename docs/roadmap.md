@@ -2,17 +2,18 @@
 
 The implementation is intentionally incremental:
 
-1. Repository foundation
-2. Core result and error model
-3. Messaging abstractions
-4. Validation pipeline
-5. ASP.NET Core integration
-6. Sample consumer API
-7. Logging and observability
-8. Configuration and package validation
-9. `dotnet new` template
-10. Interactive CLI
-11. Diagnostics
-12. Real-world adoption
+1. Repository foundation — completed
+2. Core result and error model — completed
+3. Messaging abstractions — completed
+4. Runtime execution and explicit handler registration — completed
+5. Validation — next
+6. ASP.NET Core integration
+7. Sample consumer API
+8. Logging and observability
+9. Configuration and package validation
+10. `dotnet new` template
+11. Interactive CLI
+12. Diagnostics
+13. Real-world adoption
 
-The current milestone is Milestone 0. Do not introduce later-milestone functionality until the foundation has been reviewed and approved.
+The current milestone is the Validation design/implementation milestone. Runtime is intentionally separate from Core and does not yet include validation, logging, decorators, or mediator integration.

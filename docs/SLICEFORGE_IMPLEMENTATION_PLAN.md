@@ -528,7 +528,7 @@ Do not introduce reflection to solve something generics or normal registration c
 A developer reading:
 
 ```csharp
-builder.Services.AddSliceForge<ApplicationAssembly>();
+builder.Services.AddSliceForgeRuntime();
 ```
 
 should be able to discover exactly what it registers.
