@@ -1,0 +1,72 @@
+name: Publish NuGet
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Publish 0.1.0-preview.1
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      CI: true
+      VERSION: 0.1.0-preview.1
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up the repository .NET SDK
+        uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      - name: Verify release tag
+        shell: bash
+        run: |
+          test "${GITHUB_REF_NAME}" = "v${VERSION}"
+
+      - name: Restore
+        run: dotnet restore SliceForge.slnx
+
+      - name: Verify formatting
+        run: dotnet format SliceForge.slnx --verify-no-changes
+
+      - name: Build Release
+        run: dotnet build SliceForge.slnx -c Release --no-restore
+
+      - name: Run all tests
+        run: dotnet test SliceForge.slnx -c Release --no-build
+
+      - name: Pack coordinated preview
+        run: dotnet pack SliceForge.slnx -c Release --no-restore -o artifacts/packages
+
+      - name: Validate packages, generated consumers, template, and CLI
+        shell: pwsh
+        run: ./scripts/validate-packages.ps1
+
+      - name: NuGet login with trusted publishing
+        uses: NuGet/login@v1
+        id: login
+        with:
+          user: Clint
+
+      - name: Publish packages to NuGet.org
+        shell: bash
+        env:
+          NUGET_API_KEY: ${{ steps.login.outputs.NUGET_API_KEY }}
+        run: |
+          for package in artifacts/packages/*.nupkg; do
+            echo "Publishing ${package}"
+            dotnet nuget push "${package}" \
+              --api-key "${NUGET_API_KEY}" \
+              --source https://api.nuget.org/v3/index.json \
+              --skip-duplicate
+          done
