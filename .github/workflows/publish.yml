@@ -10,14 +10,14 @@ permissions:
 
 jobs:
   publish:
-    name: Publish 0.1.0-preview.1
+    name: Publish 0.1.0-preview.2
     runs-on: ubuntu-latest
     permissions:
       contents: read
       id-token: write
     env:
       CI: true
-      VERSION: 0.1.0-preview.1
+      VERSION: 0.1.0-preview.2
 
     steps:
       - name: Check out repository
@@ -58,12 +58,23 @@ jobs:
         with:
           user: Clint
 
-      - name: Publish packages to NuGet.org
+      - name: Publish coordinated package set to NuGet.org
         shell: bash
         env:
           NUGET_API_KEY: ${{ steps.login.outputs.NUGET_API_KEY }}
         run: |
-          for package in artifacts/packages/*.nupkg; do
+          packages=(
+            SliceForge.Core
+            SliceForge.Runtime
+            SliceForge.Validation
+            SliceForge.AspNetCore
+            SliceForge.Observability
+            SliceForge.Templates
+            SliceForge.Tool
+          )
+
+          for package_id in "${packages[@]}"; do
+            package="artifacts/packages/${package_id}.${VERSION}.nupkg"
             echo "Publishing ${package}"
             dotnet nuget push "${package}" \
               --api-key "${NUGET_API_KEY}" \

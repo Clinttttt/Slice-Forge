@@ -41,7 +41,7 @@ public sealed class CliCommandTests
         int exitCode = await CliCommandFactory.InvokeAsync(["version"], console, new FakeProcessRunner());
 
         Assert.Equal(0, exitCode);
-        Assert.Equal($"0.1.0-preview.1{Environment.NewLine}", console.OutputWriter.ToString());
+        Assert.Equal($"0.1.0-preview.2{Environment.NewLine}", console.OutputWriter.ToString());
         Assert.Empty(console.ErrorWriter.ToString());
     }
 
@@ -53,7 +53,7 @@ public sealed class CliCommandTests
         int exitCode = await CliCommandFactory.InvokeAsync(["--version"], console, new FakeProcessRunner());
 
         Assert.Equal(0, exitCode);
-        Assert.Equal($"0.1.0-preview.1{Environment.NewLine}", console.OutputWriter.ToString());
+        Assert.Equal($"0.1.0-preview.2{Environment.NewLine}", console.OutputWriter.ToString());
         Assert.Empty(console.ErrorWriter.ToString());
     }
 }

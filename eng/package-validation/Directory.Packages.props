@@ -4,11 +4,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageVersion Include="SliceForge.Core" Version="0.1.0-preview.1" />
-    <PackageVersion Include="SliceForge.Runtime" Version="0.1.0-preview.1" />
-    <PackageVersion Include="SliceForge.Validation" Version="0.1.0-preview.1" />
-    <PackageVersion Include="SliceForge.AspNetCore" Version="0.1.0-preview.1" />
-    <PackageVersion Include="SliceForge.Observability" Version="0.1.0-preview.1" />
+    <PackageVersion Include="SliceForge.Core" Version="0.1.0-preview.2" />
+    <PackageVersion Include="SliceForge.Runtime" Version="0.1.0-preview.2" />
+    <PackageVersion Include="SliceForge.Validation" Version="0.1.0-preview.2" />
+    <PackageVersion Include="SliceForge.AspNetCore" Version="0.1.0-preview.2" />
+    <PackageVersion Include="SliceForge.Observability" Version="0.1.0-preview.2" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.12" />
   </ItemGroup>
 </Project>

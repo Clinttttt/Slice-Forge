@@ -1,7 +1,7 @@
 # SliceForge
 
 SliceForge is an early-stage toolkit for building composable .NET applications
-with Vertical Slice Architecture. The `0.1.0-preview.1` packages target .NET 10
+with Vertical Slice Architecture. The `0.1.0-preview.2` packages target .NET 10
 and are versioned as a coordinated preview set. APIs and package boundaries may
 change before a stable release.
 
@@ -15,16 +15,16 @@ change before a stable release.
 | `SliceForge.AspNetCore` | Expected Result-to-HTTP mapping; success responses remain application-owned. |
 | `SliceForge.Observability` | Optional .NET logging, activity, and metrics instrumentation. |
 | `SliceForge.Templates` | A `dotnet new` template for a .NET 10 Minimal API consumer. |
-| `SliceForge.Cli` | A .NET global tool for creating applications from the template and checking the local environment. |
+| `SliceForge.Tool` | A .NET global tool for creating applications from the template and checking the local environment. |
 
 Install only the capabilities your application uses. For example:
 
 ```powershell
-dotnet add package SliceForge.Core --version 0.1.0-preview.1
-dotnet add package SliceForge.Runtime --version 0.1.0-preview.1
-dotnet add package SliceForge.Validation --version 0.1.0-preview.1
-dotnet add package SliceForge.AspNetCore --version 0.1.0-preview.1
-dotnet add package SliceForge.Observability --version 0.1.0-preview.1
+dotnet add package SliceForge.Core --version 0.1.0-preview.2
+dotnet add package SliceForge.Runtime --version 0.1.0-preview.2
+dotnet add package SliceForge.Validation --version 0.1.0-preview.2
+dotnet add package SliceForge.AspNetCore --version 0.1.0-preview.2
+dotnet add package SliceForge.Observability --version 0.1.0-preview.2
 ```
 
 Core is a transitive dependency of Runtime, Validation, and AspNetCore. A direct
@@ -71,7 +71,7 @@ application that consumes the five runtime libraries above as NuGet packages.
 Install the .NET global tool and use its compact root screen or commands:
 
 ```powershell
-dotnet tool install --global SliceForge.Cli --version 0.1.0-preview.1
+dotnet tool install --global SliceForge.Tool --version 0.1.0-preview.2
 sliceforge
 sliceforge new -n DispatchFlow
 sliceforge doctor
@@ -88,7 +88,7 @@ installed template; it does not install or restore anything.
 Install the template package and create a consumer application:
 
 ```powershell
-dotnet new install SliceForge.Templates@0.1.0-preview.1
+dotnet new install SliceForge.Templates@0.1.0-preview.2
 dotnet new sliceforge-api -n DispatchFlow
 ```
 

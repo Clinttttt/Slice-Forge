@@ -37,7 +37,7 @@ execution metrics using .NET instrumentation primitives. It does not depend on
 OpenTelemetry; consumers configure subscriptions, `service.name`, exporters,
 and sampling. Register it after Validation so it observes validation failures.
 Milestone 8 closes the configuration audit without adding an options API and
-validates the five synchronized `0.1.0-preview.1` libraries through a local
+validates the five synchronized `0.1.0-preview.2` libraries through a local
 feed and isolated package-only consumer. CI repeats restore, formatting, build,
 tests, pack, package inspection, and consumer execution; it never publishes.
 
@@ -49,7 +49,7 @@ Result, and HTTP mapping. CI installs it in an isolated template environment,
 generates `DispatchFlow`, and restores, builds, and tests that generated
 application from the local package feed. Endpoint discovery remains deferred.
 
-Milestone 10 adds `SliceForge.Cli` as a .NET global tool, without references to
+Milestone 10 adds the `SliceForge.Cli` implementation as the `SliceForge.Tool` .NET global-tool package, without references to
 the SliceForge runtime packages. It provides a restrained root screen, standard
 help/version parsing, `new`, `doctor`, and `version`; generation delegates to
 the installed `sliceforge-api` template. Template installation is explicit and

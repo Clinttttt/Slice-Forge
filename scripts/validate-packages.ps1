@@ -12,7 +12,7 @@ $generatedRoot = Join-Path $validationRoot 'generated'
 $generatedAppRoot = Join-Path $generatedRoot 'DispatchFlow'
 $templateHive = Join-Path $validationRoot 'template-hive'
 $cliValidationRoot = Join-Path $validationRoot 'cli'
-$expectedVersion = '0.1.0-preview.1'
+$expectedVersion = '0.1.0-preview.2'
 $expectedRepository = 'https://github.com/Clinttttt/Slice-Forge'
 
 $expectedDependencies = [ordered]@{
@@ -297,19 +297,19 @@ finally {
     $templateArchive.Dispose()
 }
 
-$cliPackageId = 'SliceForge.Cli'
+$cliPackageId = 'SliceForge.Tool'
 $cliPackagePath = Join-Path $packageRoot "$cliPackageId.$expectedVersion.nupkg"
 $cliSymbolPath = Join-Path $packageRoot "$cliPackageId.$expectedVersion.snupkg"
-Assert-Condition (Test-Path -LiteralPath $cliPackagePath -PathType Leaf) 'The SliceForge.Cli package is missing.'
-Assert-Condition (-not (Test-Path -LiteralPath $cliSymbolPath)) 'SliceForge.Cli should package debugging payload with its tool and must not produce a separate symbol package.'
+Assert-Condition (Test-Path -LiteralPath $cliPackagePath -PathType Leaf) 'The SliceForge.Tool package is missing.'
+Assert-Condition (-not (Test-Path -LiteralPath $cliSymbolPath)) 'SliceForge.Tool should package debugging payload with its tool and must not produce a separate symbol package.'
 
 $cliArchive = [System.IO.Compression.ZipFile]::OpenRead($cliPackagePath)
 try {
     $cliNuspecEntries = @($cliArchive.Entries | Where-Object { $_.FullName.EndsWith('.nuspec', [System.StringComparison]::OrdinalIgnoreCase) })
-    Assert-Condition ($cliNuspecEntries.Count -eq 1) 'SliceForge.Cli must contain exactly one nuspec.'
+    Assert-Condition ($cliNuspecEntries.Count -eq 1) 'SliceForge.Tool must contain exactly one nuspec.'
     [xml] $cliNuspec = Read-ZipEntryText $cliNuspecEntries[0]
     $cliMetadata = $cliNuspec.SelectSingleNode("//*[local-name()='metadata']")
-    Assert-Condition ($cliMetadata.SelectSingleNode("./*[local-name()='id']").InnerText -eq $cliPackageId) 'SliceForge.Cli nuspec ID mismatch.'
+    Assert-Condition ($cliMetadata.SelectSingleNode("./*[local-name()='id']").InnerText -eq $cliPackageId) 'SliceForge.Tool nuspec ID mismatch.'
     Assert-Condition ($cliMetadata.SelectSingleNode("./*[local-name()='title']").InnerText -eq 'SliceForge CLI') 'SliceForge.Cli title metadata is missing or incorrect.'
     Assert-Condition ($cliMetadata.SelectSingleNode("./*[local-name()='version']").InnerText -eq $expectedVersion) 'SliceForge.Cli version mismatch.'
     Assert-Condition ($cliMetadata.SelectSingleNode("./*[local-name()='authors']").InnerText -eq 'Clint Villanueva') 'SliceForge.Cli author metadata is missing or incorrect.'

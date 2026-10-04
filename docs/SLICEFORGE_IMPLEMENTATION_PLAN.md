@@ -1733,8 +1733,8 @@ This audit is complete without production configuration API.
 
 # 10. Milestone 8 — Package Validation (completed locally; not published)
 
-The five public packages target `net10.0` and share version
-`0.1.0-preview.1`: `SliceForge.Core`, `SliceForge.Runtime`,
+The five public runtime packages target `net10.0` and share the current coordinated preview version
+`0.1.0-preview.2`: `SliceForge.Core`, `SliceForge.Runtime`,
 `SliceForge.Validation`, `SliceForge.AspNetCore`, and
 `SliceForge.Observability`. Shared package metadata is centralized; package
 identity, description, and tags remain in each packable project. The packages
@@ -1775,14 +1775,14 @@ rewriting; do not silently change pack output.
 # 11. Milestone 9 — `dotnet new` Template (completed as a preview)
 
 The content-only NuGet package is `SliceForge.Templates` at the synchronized
-`0.1.0-preview.1` version. It targets the .NET 10 template ecosystem, declares
+`0.1.0-preview.2` version. It targets the .NET 10 template ecosystem, declares
 `PackageType=Template`, and contains no SliceForge runtime dependency or
 compiled assemblies.
 
 Scriptable use:
 
 ```powershell
-dotnet new install SliceForge.Templates@0.1.0-preview.1
+dotnet new install SliceForge.Templates@0.1.0-preview.2
 dotnet new sliceforge-api -n DispatchFlow
 ```
 
@@ -1827,8 +1827,8 @@ generated application architecture; the CLI delegates to `dotnet new` rather
 than generating files itself. The directly scriptable template workflow remains
 available without the CLI.
 
-Package identity is `SliceForge.Cli`, title `SliceForge CLI`, synchronized
-version `0.1.0-preview.1`, target `net10.0`, and tool command `sliceforge`.
+Package identity is `SliceForge.Tool`, title `SliceForge CLI`; the implementation project and assembly remain `SliceForge.Cli`. The synchronized
+version is `0.1.0-preview.2`, target `net10.0`, and tool command `sliceforge`.
 `System.CommandLine` 2.0.12 is centrally versioned. The tool has no dependency
 on SliceForge runtime packages.
 
@@ -2188,7 +2188,7 @@ Completed milestones:
 - Milestone 7: optional Logging & Observability sender decoration
 - Milestone 8: configuration audit and package validation
 - Milestone 9: content-only `SliceForge.Templates` package and isolated generated-app validation
-- Milestone 10: `SliceForge.Cli` preview global tool and isolated tool/template validation
+- Milestone 10: `SliceForge.Tool` preview global-tool package (implemented by `SliceForge.Cli`) and isolated tool/template validation
 
 Runtime is separate from Core and uses exact concrete-message routing. It does
 not use MediatR, assembly scanning, polymorphic discovery, or a public
