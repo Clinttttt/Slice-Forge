@@ -18,6 +18,21 @@ Consumer application
 explicit, exact-concrete-type FluentValidation routes. Runtime remains free of
 validation dependencies.
 
+`SliceForge.Observability` is optional and decorates the scoped Runtime sender
+with structured message logs, `ActivitySource` activities, and `Meter`
+metrics. When Validation is enabled, register Observability after Validation
+so it remains outermost and sees validation outcomes. The package uses no
+OpenTelemetry dependency; consumers subscribe to its instrumentation and own
+resource identity (including `service.name`), exporters, sampling, and backend.
+
+Optional instrumentation dependency direction:
+
+```text
+SliceForge.Observability → SliceForge.Runtime → SliceForge.Core
+                         → Microsoft.Extensions.DependencyInjection.Abstractions
+                         → Microsoft.Extensions.Logging.Abstractions
+```
+
 `SliceForge.AspNetCore` maps Core Results to ASP.NET Core `IResult` values. It
 owns expected failure mapping while consumers choose success responses, map
 endpoints explicitly, configure authentication, and register framework-owned

@@ -9,7 +9,7 @@ The implementation is intentionally incremental:
 5. Validation — completed
 6. ASP.NET Core Result mapping — completed
 7. Sample consumer API — completed
-8. Logging and observability — next
+8. Logging and observability — completed
 9. Configuration and package validation
 10. `dotnet new` template
 11. Interactive CLI
@@ -28,5 +28,11 @@ Minimal API routes exercise typed command, non-generic command, and query
 dispatch; FluentValidation through the optional sender decorator; and
 consumer-owned Created/OK/NoContent responses. A test-only
 `Microsoft.AspNetCore.Mvc.Testing` 10.0.12 project verifies the complete HTTP
-flow with a fresh in-memory store per test. The next milestone is Logging &
-Observability.
+flow with a fresh in-memory store per test.
+
+Milestone 7 adds the optional `SliceForge.Observability` sender decorator. It
+emits structured outcome logs, command/query activities, and low-cardinality
+execution metrics using .NET instrumentation primitives. It does not depend on
+OpenTelemetry; consumers configure subscriptions, `service.name`, exporters,
+and sampling. Register it after Validation so it observes validation failures.
+The next milestone is configuration and package validation.

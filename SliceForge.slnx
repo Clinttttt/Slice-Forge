@@ -5,12 +5,14 @@
   <Folder Name="/src/">
     <Project Path="src/SliceForge.AspNetCore/SliceForge.AspNetCore.csproj" />
     <Project Path="src/SliceForge.Core/SliceForge.Core.csproj" />
+    <Project Path="src/SliceForge.Observability/SliceForge.Observability.csproj" />
     <Project Path="src/SliceForge.Runtime/SliceForge.Runtime.csproj" />
     <Project Path="src/SliceForge.Validation/SliceForge.Validation.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/SliceForge.AspNetCore.Tests/SliceForge.AspNetCore.Tests.csproj" />
     <Project Path="tests/SliceForge.Core.Tests/SliceForge.Core.Tests.csproj" />
+    <Project Path="tests/SliceForge.Observability.Tests/SliceForge.Observability.Tests.csproj" />
     <Project Path="tests/SliceForge.Runtime.Tests/SliceForge.Runtime.Tests.csproj" />
     <Project Path="tests/SliceForge.Sample.Api.Tests/SliceForge.Sample.Api.Tests.csproj" />
     <Project Path="tests/SliceForge.Validation.Tests/SliceForge.Validation.Tests.csproj" />

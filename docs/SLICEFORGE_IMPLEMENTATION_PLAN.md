@@ -142,15 +142,13 @@ Each milestone must:
 
 ## 1.2 Do not over-engineer early
 
-Do **not** begin by creating:
+Do **not** pre-create capabilities without a concrete dependency or consumer need:
 
 ```text
 SliceForge.Core
 SliceForge.Messaging
 SliceForge.Results
-SliceForge.Validation
 SliceForge.Endpoints
-SliceForge.OpenTelemetry
 SliceForge.Logging
 SliceForge.Persistence
 SliceForge.Authentication
@@ -166,6 +164,7 @@ SliceForge.Core
 SliceForge.Runtime
 SliceForge.Validation (optional)
 SliceForge.AspNetCore
+SliceForge.Observability (optional)
 ```
 
 Additional packages are introduced only when a real dependency reason appears.
@@ -206,7 +205,10 @@ Consumer Application
    ├──► SliceForge.AspNetCore ──► SliceForge.Core
    │       └── Microsoft.AspNetCore.App framework reference
    ├──► SliceForge.Runtime ─────► SliceForge.Core
-   └──► SliceForge.Validation ──► SliceForge.Runtime
+   ├──► SliceForge.Validation ──► SliceForge.Runtime
+   └──► SliceForge.Observability ─► SliceForge.Runtime
+           ├── Microsoft.Extensions.DependencyInjection.Abstractions
+           └── Microsoft.Extensions.Logging.Abstractions
 ```
 
 `SliceForge.AspNetCore` must not reference Runtime or Validation. Core must not
@@ -280,7 +282,6 @@ ICommand
 ICommandHandler
 Result<T>
 ValidationMessageSender
-SliceForgeOptions
 AddSliceForge
 ToHttpResult
 ```
@@ -621,7 +622,6 @@ For example, do not immediately create:
 ```text
 UseCaseName
 ErrorCode
-ServiceName
 EndpointName
 PackageName
 ```
@@ -715,7 +715,7 @@ Good:
 Bad:
 
 ```csharp
-// Add logging behavior.
+// Add sender decoration.
 services.Add...
 ```
 
@@ -1399,7 +1399,7 @@ the current DI scope at execution time and are transient by default.
 
 ## 5.3 Sender decoration ordering
 
-Future observability should use the same explicit sender-decoration mechanism:
+Milestone 7 adds observability through the same explicit sender-decoration mechanism:
 
 ```text
 ObservabilityMessageSender
@@ -1593,85 +1593,118 @@ feat(sample): add end-to-end SliceForge consumer API
 
 ---
 
-# 8. Milestone 7 — Logging & Observability
+# 8. Milestone 7 — Logging & Observability (completed)
 
-Do this only after the application pipeline is stable.
+`SliceForge.Observability` is an optional package over Runtime. It decorates
+the scoped `IMessageSender`; Runtime and Core remain free of observability
+dependencies. The package references Runtime,
+`Microsoft.Extensions.DependencyInjection.Abstractions`, and
+`Microsoft.Extensions.Logging.Abstractions`. It does not reference Validation,
+ASP.NET Core, OpenTelemetry, MediatR, or Scrutor.
 
-## Goals
+The public surface is limited to `SliceForgeInstrumentation` constants for the
+activity source, meter, and logger category names, plus
+`AddSliceForgeObservability(IServiceCollection)`. There is no options object.
 
-Add:
+## 8.1 Sender decoration and registration order
 
-- structured logging behavior,
-- command/query activities,
-- trace correlation,
-- metrics,
-- optional OpenTelemetry integration.
-
-Potential future project:
-
-```text
-SliceForge.Observability
-```
-
-Do not split it into a new package until dependency pressure justifies the split.
-
-## 8.1 ObservabilityMessageSender
-
-Required semantics:
+Register Runtime first, optional Validation next, and Observability last:
 
 ```text
-Success
-→ Information
-
-Expected Result failure
-→ structured non-exception outcome
-
-Cancellation
-→ cancellation outcome
-
-Unhandled exception
-→ activity marked appropriately,
-  exception logged once by exception owner
+ObservabilityMessageSender
+    ↓
+ValidationMessageSender (when enabled)
+    ↓
+DefaultMessageSender
+    ↓
+Handler
 ```
 
-Avoid duplicate exception logging.
+Observability therefore sees successful messages, expected Result failures,
+validation failures, cancellation, and unexpected exceptions. It returns the
+same Result object, preserves the message and cancellation token, and invokes
+the inner sender exactly once. Registration requires exactly one supported
+scoped, unkeyed sender and rejects duplicate enablement. A private keyed DI
+registration preserves the captured descriptor's lifetime and disposal
+tracking; consumers must not call Validation after Observability.
 
-## 8.2 Service name
+This is sender decoration, not a public pipeline-stage abstraction or a renamed
+MediatR behavior. No Scrutor dependency is used.
 
-Never hardcode:
+## 8.2 Activities
 
-```text
-Project.Api
-```
+The process-wide `ActivitySource` name is
+`SliceForgeInstrumentation.ActivitySourceName`, whose value is
+`SliceForge.Observability`. Command and query activity names are
+`sliceforge.command` and `sliceforge.query`; both use `ActivityKind.Internal`
+and naturally parent from `Activity.Current`.
 
-Preferred default:
+Tags are `sliceforge.message.kind`, `sliceforge.message.type`,
+`sliceforge.outcome`, and `sliceforge.error.type` for returned failures only.
+Outcomes are `success`, `failure`, `validation_failure`, `cancelled`, and
+`exception`. Success sets status `Ok`; expected failures, validation failures,
+and cancellation leave status `Unset`; unexpected exceptions set `Error`.
+Never record payloads, request or validation values/messages, error code or
+description, credentials, or exception details.
 
-```text
-Entry assembly name
-```
+## 8.3 Metrics
 
-Allow override:
+The process-wide `Meter` name is `SliceForgeInstrumentation.MeterName`, whose
+value is `SliceForge.Observability`. The only instruments are:
+
+| Instrument | Type | Unit |
+| --- | --- | --- |
+| `sliceforge.messaging.executions` | `Counter<long>` | `{execution}` |
+| `sliceforge.messaging.duration` | `Histogram<double>` | `s` |
+
+Record once per send, including cancellation and exceptions. Duration includes
+the complete inner sender call, including Validation when it is inside the
+decorator. Metric tags are limited to `sliceforge.message.kind` and
+`sliceforge.outcome`; message type, `ErrorType`, error code, and other
+application-defined strings are not metric dimensions.
+
+## 8.4 Structured logging and exception ownership
+
+The stable logger category is `SliceForge.Observability`. Fixed events are:
+
+| Event ID | Name | Level |
+| --- | --- | --- |
+| 1000 | `MessageSucceeded` | Debug |
+| 1001 | `MessageFailed` | Information |
+| 1002 | `MessageValidationFailed` | Information |
+| 1003 | `MessageCancelled` | Debug |
+
+Structured fields are limited to `MessageKind`, `MessageType`, `Outcome`, and
+`ErrorType` for returned failures. Do not log payloads, values, descriptions,
+codes, validation messages, or exception details. Unexpected exceptions are
+marked in activities/metrics and rethrown unchanged; this package does not
+log them, leaving the single exception log to the outer exception owner.
+Cancellation remains `OperationCanceledException` and is rethrown unchanged.
+Telemetry emission is best-effort and cannot replace results or mask the
+sender's cancellation/exception.
+
+## 8.5 OpenTelemetry and service identity
+
+SliceForge uses .NET `ActivitySource`, `Meter`, and Logging abstractions and
+has no OpenTelemetry dependency. Consumers may opt in externally:
 
 ```csharp
-options.Observability.ServiceName = "DispatchFlow.Api";
+builder.Services.AddOpenTelemetry()
+    .WithTracing(tracing =>
+        tracing.AddSource(SliceForgeInstrumentation.ActivitySourceName))
+    .WithMetrics(metrics =>
+        metrics.AddMeter(SliceForgeInstrumentation.MeterName));
 ```
 
-## 8.3 Trace relationship
-
-Target:
-
-```text
-HTTP span
-└── SliceForge command/query span
-    └── database/external spans
-```
-
-A shared `TraceId` should make logs and ProblemDetails correlatable.
+The consumer owns `service.name`, `ResourceBuilder`, exporters, sampling, and
+the telemetry backend. Instrumentation source/meter names identify SliceForge,
+not the consuming application. No observability options are added until a
+real configurable choice is demonstrated.
 
 Suggested commit:
 
 ```text
-feat(observability): add structured pipeline telemetry
+feat(observability): add sender execution instrumentation
 ```
 
 ---
@@ -1692,17 +1725,9 @@ builder.Services
 
 But avoid creating dozens of meaningless booleans.
 
-Prefer feature-specific options objects.
-
-Potential model:
-
-```text
-SliceForgeOptions
-├── Validation
-├── Logging
-├── Observability
-└── Diagnostics
-```
+Add feature-specific options only when a real consumer-controlled setting is
+demonstrated. Observability currently has no options; do not add placeholder
+Logging or Observability sections to a shared options object.
 
 Do not add endpoint options for endpoint discovery, which SliceForge does not
 provide. Do not place database/authentication configuration in SliceForge
@@ -1932,9 +1957,10 @@ Validation
 ○ None
 
 Observability
-● Structured logging + OpenTelemetry
-○ Logging only
+● SliceForge logs, activities, and metrics
 ○ None
+
+OpenTelemetry exporters and resource configuration are optional consumer-owned choices.
 
 Testing
 ● xUnit
@@ -1946,7 +1972,8 @@ Project          DispatchFlow
 Framework        .NET 10
 Architecture     Vertical Slice
 Validation       FluentValidation
-Observability    OpenTelemetry
+Observability    SliceForge.Observability
+OpenTelemetry    consumer-configured (optional)
 Testing          xUnit
 
 Create project? Yes
@@ -2025,7 +2052,7 @@ Use a real project such as DispatchFlow as a consumer.
 
 Migration should be incremental.
 
-Potential extracted/copied infrastructure to remove from the application:
+Potential package dependencies to replace application-owned copies:
 
 ```text
 Result.cs
@@ -2034,10 +2061,11 @@ ICommand.cs
 IQuery.cs
 ICommandHandler.cs
 IQueryHandler.cs
-ValidationMessageSender.cs
-ObservabilityMessageSender.cs
 common Result → HTTP mapping
 ```
+
+The sender decorators are package implementation details and should be consumed
+through their registration extensions, not copied into the application.
 
 Application keeps:
 
@@ -2124,7 +2152,7 @@ Examples:
 SliceForge
 SliceForge.Messaging
 SliceForge.Results
-SliceForge.Behaviors
+SliceForge.Observability
 SliceForge.DependencyInjection
 
 SliceForge.AspNetCore
@@ -2195,7 +2223,7 @@ feat(aspnetcore): add result HTTP mapping
 
 feat(sample): add vertical slice sample API
 
-feat(observability): add sender observability decorator
+feat(observability): add sender execution instrumentation
 
 feat(packaging): configure preview NuGet packages
 
@@ -2302,6 +2330,7 @@ Completed milestones:
 - Milestone 4: optional Validation sender decoration
 - Milestone 5: ASP.NET Core Result mapping
 - Milestone 6: end-to-end Todos Sample API
+- Milestone 7: optional Logging & Observability sender decoration
 
 Runtime is separate from Core and uses exact concrete-message routing. It does
 not use MediatR, assembly scanning, polymorphic discovery, or a public
@@ -2316,8 +2345,11 @@ sender and must not assume a pre-existing MediatR pipeline or reintroduce
 mediator types into Core. Historical references above preserve the original
 decision trail; they are not implementation instructions.
 
-The next milestone is Logging & Observability. The Sample API demonstrates
+Logging & Observability is complete as an optional Runtime sender decorator;
+it has no OpenTelemetry package dependency and does not own `service.name`.
+The Sample API demonstrates
 the consumer-owned HTTP flow with explicit routes, `IMessageSender`, and
 `ToHttpResult`; the application configures `AddProblemDetails()` and
 `UseExceptionHandler()` directly. Endpoint discovery remains deferred, and
-`SliceForge.AspNetCore` remains independent of Runtime and Validation.
+`SliceForge.AspNetCore` remains independent of Runtime and Validation. The next
+milestone is Configuration and Package Validation.
