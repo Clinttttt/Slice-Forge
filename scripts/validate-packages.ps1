@@ -12,7 +12,7 @@ $generatedRoot = Join-Path $validationRoot 'generated'
 $generatedAppRoot = Join-Path $generatedRoot 'DispatchFlow'
 $templateHive = Join-Path $validationRoot 'template-hive'
 $cliValidationRoot = Join-Path $validationRoot 'cli'
-$expectedVersion = '0.1.0-preview.2'
+$expectedVersion = '0.1.0-preview.3'
 $expectedRepository = 'https://github.com/Clinttttt/Slice-Forge'
 
 $expectedDependencies = [ordered]@{
@@ -23,11 +23,11 @@ $expectedDependencies = [ordered]@{
     'SliceForge.Observability' = @('SliceForge.Runtime', 'Microsoft.Extensions.DependencyInjection.Abstractions', 'Microsoft.Extensions.Logging.Abstractions')
 }
 $expectedTags = @{
-    'SliceForge.Core' = 'sliceforge core results messaging'
-    'SliceForge.Runtime' = 'sliceforge runtime messaging commands queries'
-    'SliceForge.Validation' = 'sliceforge validation fluentvalidation'
-    'SliceForge.AspNetCore' = 'sliceforge aspnetcore results http'
-    'SliceForge.Observability' = 'sliceforge observability logging tracing metrics'
+    'SliceForge.Core' = 'sliceforge dotnet vertical-slice cqrs result-pattern messaging commands queries'
+    'SliceForge.Runtime' = 'sliceforge dotnet vertical-slice cqrs messaging commands queries dispatcher dependency-injection'
+    'SliceForge.Validation' = 'sliceforge dotnet vertical-slice validation fluentvalidation cqrs result-pattern'
+    'SliceForge.AspNetCore' = 'sliceforge dotnet aspnetcore minimal-api vertical-slice result-pattern http problem-details'
+    'SliceForge.Observability' = 'sliceforge dotnet observability logging tracing metrics diagnostics vertical-slice'
 }
 
 function Assert-Condition {

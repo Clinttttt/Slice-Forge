@@ -6,8 +6,8 @@
     <PackageId>SliceForge.Templates</PackageId>
     <PackageType>Template</PackageType>
     <Title>SliceForge Templates</Title>
-    <Description>Preview .NET 10 Minimal API and test project template using SliceForge packages.</Description>
-    <PackageTags>sliceforge templates dotnet-new scaffolding</PackageTags>
+    <Description>Opinionated .NET 10 Minimal API template using SliceForge Vertical Slice architecture, validation, observability, and testing.</Description>
+    <PackageTags>sliceforge;vertical-slice;dotnet;dotnet-new;templates;scaffolding;aspnetcore;minimal-api;testing</PackageTags>
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <IncludeContentInPack>true</IncludeContentInPack>
     <ContentTargetFolders>content</ContentTargetFolders>

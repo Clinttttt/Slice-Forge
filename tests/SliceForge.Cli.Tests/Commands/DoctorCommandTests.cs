@@ -50,7 +50,7 @@ public sealed class DoctorCommandTests
 
         Assert.Equal(1, exitCode);
         Assert.Contains("✗ SliceForge template not installed", console.OutputWriter.ToString(), StringComparison.Ordinal);
-        Assert.Contains("dotnet new install SliceForge.Templates@0.1.0-preview.2", console.OutputWriter.ToString(), StringComparison.Ordinal);
+        Assert.Contains("dotnet new install SliceForge.Templates@0.1.0-preview.3", console.OutputWriter.ToString(), StringComparison.Ordinal);
     }
 
     [Fact]

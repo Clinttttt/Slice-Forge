@@ -8,8 +8,8 @@
   <PropertyGroup>
     <IsPackable>true</IsPackable>
     <PackageId>SliceForge.Runtime</PackageId>
-    <Description>Explicit command and query routing runtime for SliceForge.</Description>
-    <PackageTags>sliceforge;runtime;messaging;commands;queries</PackageTags>
+    <Description>Explicit command and query dispatch for SliceForge with typed handlers, cancellation support, and no mandatory mediator dependency.</Description>
+    <PackageTags>sliceforge;dotnet;vertical-slice;cqrs;messaging;commands;queries;dispatcher;dependency-injection</PackageTags>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <TargetFramework>net10.0</TargetFramework>
   </PropertyGroup>

@@ -3,8 +3,8 @@
   <PropertyGroup>
     <IsPackable>true</IsPackable>
     <PackageId>SliceForge.Observability</PackageId>
-    <Description>Optional logging, tracing, and metrics instrumentation for SliceForge messaging.</Description>
-    <PackageTags>sliceforge;observability;logging;tracing;metrics</PackageTags>
+    <Description>Structured logging, tracing, activities, and metrics for SliceForge command and query execution.</Description>
+    <PackageTags>sliceforge;dotnet;observability;logging;tracing;metrics;diagnostics;vertical-slice</PackageTags>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <TargetFramework>net10.0</TargetFramework>
   </PropertyGroup>

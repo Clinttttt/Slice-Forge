@@ -51,7 +51,7 @@ Validation precedes Observability when both are enabled.
 The public package set is `SliceForge.Core`, `SliceForge.Runtime`,
 `SliceForge.Validation`, `SliceForge.AspNetCore`, `SliceForge.Observability`,
 `SliceForge.Templates`, and `SliceForge.Tool`. All are versioned together as
-`0.1.0-preview.2`
+`0.1.0-preview.3`
 and target `net10.0`. Project references pack as NuGet dependencies; sibling
 assemblies are not embedded. AspNetCore carries a `Microsoft.AspNetCore.App`
 framework reference and has no Runtime dependency. The preview uses Apache-2.0

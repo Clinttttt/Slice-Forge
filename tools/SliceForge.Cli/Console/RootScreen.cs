@@ -2,7 +2,7 @@ namespace SliceForge.Cli.Console;
 
 internal static class RootScreen
 {
-    private const int ContentWidth = 40;
+    private const int ContentWidth = 45;
 
     public static void Write(TextWriter output, string version, bool supportsUnicode)
     {
@@ -18,7 +18,7 @@ internal static class RootScreen
 
         output.WriteLine($"{topLeft}{new string(horizontal, ContentWidth + 2)}{topRight}");
         WriteLine(output, vertical, "SliceForge");
-        WriteLine(output, vertical, "Vertical Slice Toolkit for .NET 10");
+        WriteLine(output, vertical, "Composable Vertical Slice Toolkit for .NET 10");
         WriteLine(output, vertical, $"v{version}");
         WriteLine(output, vertical, "Author: Clint Villanueva");
         output.WriteLine($"{bottomLeft}{new string(horizontal, ContentWidth + 2)}{bottomRight}");

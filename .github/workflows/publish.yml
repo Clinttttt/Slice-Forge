@@ -10,14 +10,14 @@ permissions:
 
 jobs:
   publish:
-    name: Publish 0.1.0-preview.2
+    name: Publish 0.1.0-preview.3
     runs-on: ubuntu-latest
     permissions:
       contents: read
       id-token: write
     env:
       CI: true
-      VERSION: 0.1.0-preview.2
+      VERSION: 0.1.0-preview.3
 
     steps:
       - name: Check out repository

@@ -3,8 +3,8 @@
   <PropertyGroup>
     <IsPackable>true</IsPackable>
     <PackageId>SliceForge.Core</PackageId>
-    <Description>Framework-independent result and messaging contracts for .NET applications.</Description>
-    <PackageTags>sliceforge;core;results;messaging</PackageTags>
+    <Description>Framework-independent Result types and command/query contracts for building composable Vertical Slice applications on .NET.</Description>
+    <PackageTags>sliceforge;dotnet;vertical-slice;cqrs;result-pattern;messaging;commands;queries</PackageTags>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <TargetFramework>net10.0</TargetFramework>
   </PropertyGroup>

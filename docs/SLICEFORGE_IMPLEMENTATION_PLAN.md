@@ -1731,15 +1731,14 @@ This audit is complete without production configuration API.
 
 ---
 
-# 10. Milestone 8 — Package Validation (completed locally; not published)
+# 10. Milestone 8 — Package Validation (completed and published as preview packages)
 
 The five public runtime packages target `net10.0` and share the current coordinated preview version
-`0.1.0-preview.2`: `SliceForge.Core`, `SliceForge.Runtime`,
+`0.1.0-preview.3`: `SliceForge.Core`, `SliceForge.Runtime`,
 `SliceForge.Validation`, `SliceForge.AspNetCore`, and
 `SliceForge.Observability`. Shared package metadata is centralized; package
 identity, description, and tags remain in each packable project. The packages
-use Apache-2.0 metadata and include the root README. Do not publish from CI or
-from this repository workflow without a separate release decision.
+use Apache-2.0 metadata and include the root README. Publishing is handled by the dedicated trusted-publishing release workflow after the full validation gate succeeds.
 
 Generate packages and symbols locally:
 
@@ -1775,14 +1774,14 @@ rewriting; do not silently change pack output.
 # 11. Milestone 9 — `dotnet new` Template (completed as a preview)
 
 The content-only NuGet package is `SliceForge.Templates` at the synchronized
-`0.1.0-preview.2` version. It targets the .NET 10 template ecosystem, declares
+`0.1.0-preview.3` version. It targets the .NET 10 template ecosystem, declares
 `PackageType=Template`, and contains no SliceForge runtime dependency or
 compiled assemblies.
 
 Scriptable use:
 
 ```powershell
-dotnet new install SliceForge.Templates@0.1.0-preview.2
+dotnet new install SliceForge.Templates@0.1.0-preview.3
 dotnet new sliceforge-api -n DispatchFlow
 ```
 
@@ -1828,7 +1827,7 @@ than generating files itself. The directly scriptable template workflow remains
 available without the CLI.
 
 Package identity is `SliceForge.Tool`, title `SliceForge CLI`; the implementation project and assembly remain `SliceForge.Cli`. The synchronized
-version is `0.1.0-preview.2`, target `net10.0`, and tool command `sliceforge`.
+version is `0.1.0-preview.3`, target `net10.0`, and tool command `sliceforge`.
 `System.CommandLine` 2.0.12 is centrally versioned. The tool has no dependency
 on SliceForge runtime packages.
 

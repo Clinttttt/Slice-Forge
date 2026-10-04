@@ -6,8 +6,8 @@
     <IsPackable>true</IsPackable>
     <PackageId>SliceForge.Tool</PackageId>
     <Title>SliceForge CLI</Title>
-    <Description>Command-line experience for creating and checking SliceForge applications.</Description>
-    <PackageTags>sliceforge cli dotnet-tool templates</PackageTags>
+    <Description>Command-line tooling for creating, validating, and working with SliceForge-based .NET applications.</Description>
+    <PackageTags>sliceforge;vertical-slice;dotnet;cli;dotnet-tool;templates;scaffolding;developer-tools</PackageTags>
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>sliceforge</ToolCommandName>
     <IncludeSymbols>false</IncludeSymbols>

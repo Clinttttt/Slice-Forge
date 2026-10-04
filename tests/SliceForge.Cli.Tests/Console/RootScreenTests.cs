@@ -13,7 +13,7 @@ public sealed class RootScreenTests
 
         string text = output.ToString();
         Assert.Contains("SliceForge", text, StringComparison.Ordinal);
-        Assert.Contains("Vertical Slice Toolkit for .NET 10", text, StringComparison.Ordinal);
+        Assert.Contains("Composable Vertical Slice Toolkit for .NET 10", text, StringComparison.Ordinal);
         Assert.Contains("v0.1.0-preview.1", text, StringComparison.Ordinal);
         Assert.Contains("Author: Clint Villanueva", text, StringComparison.Ordinal);
         Assert.Contains("new       Create a SliceForge application", text, StringComparison.Ordinal);

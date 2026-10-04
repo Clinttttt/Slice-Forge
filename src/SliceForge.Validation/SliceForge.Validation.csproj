@@ -3,8 +3,8 @@
   <PropertyGroup>
     <IsPackable>true</IsPackable>
     <PackageId>SliceForge.Validation</PackageId>
-    <Description>Optional FluentValidation sender decorator for SliceForge.</Description>
-    <PackageTags>sliceforge;validation;fluentvalidation</PackageTags>
+    <Description>FluentValidation integration for SliceForge command and query execution with automatic validation and structured Result failures.</Description>
+    <PackageTags>sliceforge;dotnet;vertical-slice;validation;fluentvalidation;cqrs;result-pattern</PackageTags>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <TargetFramework>net10.0</TargetFramework>
   </PropertyGroup>

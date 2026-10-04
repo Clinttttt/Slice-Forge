@@ -11,7 +11,7 @@ The implementation is intentionally incremental:
 7. Sample consumer API — completed
 8. Logging and observability — completed
 9. Configuration audit — completed with no configuration API
-10. Package validation — completed locally; packages not published
+10. Package validation — completed and exercised against published preview packages
 11. `dotnet new` template — completed as a preview package
 12. `SliceForge.Cli` global tool — completed as a preview package
 13. Diagnostics — next
@@ -37,7 +37,7 @@ execution metrics using .NET instrumentation primitives. It does not depend on
 OpenTelemetry; consumers configure subscriptions, `service.name`, exporters,
 and sampling. Register it after Validation so it observes validation failures.
 Milestone 8 closes the configuration audit without adding an options API and
-validates the five synchronized `0.1.0-preview.2` libraries through a local
+validates the five synchronized `0.1.0-preview.3` libraries through a local
 feed and isolated package-only consumer. CI repeats restore, formatting, build,
 tests, pack, package inspection, and consumer execution; it never publishes.
 
