@@ -1,0 +1,3 @@
+# CLI and template responsibility boundary
+
+The `SliceForge.Cli` .NET global tool owns the user experience and orchestration only; it invokes `dotnet new sliceforge-api` and asks before installing a missing template. `SliceForge.Templates` remains the single source of generated application architecture and is independently scriptable, while the SliceForge libraries provide runtime capabilities to generated applications. The CLI therefore has no dependency on SliceForge runtime packages and must not generate or duplicate application architecture. Its preview Doctor checks only local SDK and template availability and performs no installation or restore.

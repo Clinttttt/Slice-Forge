@@ -36,9 +36,9 @@ jobs:
       - name: Run all tests
         run: dotnet test SliceForge.slnx -c Release --no-build
 
-      - name: Pack preview libraries and template
+      - name: Pack preview libraries, template, and CLI tool
         run: dotnet pack SliceForge.slnx -c Release --no-restore -o artifacts/packages
 
-      - name: Inspect packages and validate isolated consumers and template generation
+      - name: Inspect packages and validate isolated consumers, template generation, and CLI tool
         shell: pwsh
         run: ./scripts/validate-packages.ps1

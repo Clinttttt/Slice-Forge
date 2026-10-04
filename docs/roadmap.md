@@ -13,8 +13,8 @@ The implementation is intentionally incremental:
 9. Configuration audit — completed with no configuration API
 10. Package validation — completed locally; packages not published
 11. `dotnet new` template — completed as a preview package
-12. Interactive CLI — next
-13. Diagnostics
+12. `SliceForge.Cli` global tool — completed as a preview package
+13. Diagnostics — next
 14. Real-world adoption
 
 Milestone 5 adds Core-only Result-to-HTTP mapping in `SliceForge.AspNetCore`.
@@ -47,4 +47,14 @@ using package references rather than SliceForge source projects. Its single
 removable example slice demonstrates explicit endpoint, sender, handler,
 Result, and HTTP mapping. CI installs it in an isolated template environment,
 generates `DispatchFlow`, and restores, builds, and tests that generated
-application from the local package feed. No CLI or endpoint discovery is added.
+application from the local package feed. Endpoint discovery remains deferred.
+
+Milestone 10 adds `SliceForge.Cli` as a .NET global tool, without references to
+the SliceForge runtime packages. It provides a restrained root screen, standard
+help/version parsing, `new`, `doctor`, and `version`; generation delegates to
+the installed `sliceforge-api` template. Template installation is explicit and
+requires interactive confirmation when needed. Doctor performs only local SDK
+and template checks and does not install or restore anything. Package
+validation installs the tool and template into isolated locations, exercises
+the commands, generates `CliDispatchFlow`, and restores/builds/tests that
+consumer using the local package feed. Nothing is published.

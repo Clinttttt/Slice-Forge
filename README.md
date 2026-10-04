@@ -15,6 +15,7 @@ change before a stable release.
 | `SliceForge.AspNetCore` | Expected Result-to-HTTP mapping; success responses remain application-owned. |
 | `SliceForge.Observability` | Optional .NET logging, activity, and metrics instrumentation. |
 | `SliceForge.Templates` | A `dotnet new` template for a .NET 10 Minimal API consumer. |
+| `SliceForge.Cli` | A .NET global tool for creating applications from the template and checking the local environment. |
 
 Install only the capabilities your application uses. For example:
 
@@ -61,9 +62,26 @@ Observability uses built-in .NET instrumentation and Logging abstractions withou
 an OpenTelemetry dependency. Consumers own `service.name`, sampling, exporters,
 and telemetry backends.
 
-The packages are licensed under Apache-2.0. This preview does not include the
-CLI or diagnostic tooling. The template package is also a preview and generates
-an application that consumes the five libraries above as NuGet packages.
+The packages are licensed under Apache-2.0. The CLI and template are preview
+tools; expanded diagnostics remain future work. The template generates an
+application that consumes the five runtime libraries above as NuGet packages.
+
+## Install the CLI (preview)
+
+Install the .NET global tool and use its compact root screen or commands:
+
+```powershell
+dotnet tool install --global SliceForge.Cli --version 0.1.0-preview.1
+sliceforge
+sliceforge new -n DispatchFlow
+sliceforge doctor
+```
+
+The CLI delegates generation to `dotnet new sliceforge-api`; it does not own or
+duplicate generated application architecture. If the template is missing,
+interactive use asks before installing it. Redirected or CI use never prompts.
+The `doctor` command only checks for an installed SDK, a .NET 10 SDK, and the
+installed template; it does not install or restore anything.
 
 ## Generate an application (preview)
 
@@ -74,7 +92,8 @@ dotnet new install SliceForge.Templates@0.1.0-preview.1
 dotnet new sliceforge-api -n DispatchFlow
 ```
 
-The generated solution and projects use `DispatchFlow` as their identity and
+The direct template workflow remains available without the CLI. The generated
+solution and projects use `DispatchFlow` as their identity and
 include one small, removable example vertical slice. The template maps its
 Minimal API endpoint explicitly and composes the five published SliceForge
 library packages; it does not add repository project references or a CLI

@@ -1819,152 +1819,50 @@ or publishing the package.
 
 ---
 
-# 12. Milestone 10 — Interactive CLI
+# 12. Milestone 10 — SliceForge.Cli
 
-## Goal
+**Status: completed as a preview global tool.** The CLI is an orchestration and
+user-experience layer only. `SliceForge.Templates` remains the sole source of
+generated application architecture; the CLI delegates to `dotnet new` rather
+than generating files itself. The directly scriptable template workflow remains
+available without the CLI.
 
-Provide a polished interactive setup while preserving scriptability.
+Package identity is `SliceForge.Cli`, title `SliceForge CLI`, synchronized
+version `0.1.0-preview.1`, target `net10.0`, and tool command `sliceforge`.
+`System.CommandLine` 2.0.12 is centrally versioned. The tool has no dependency
+on SliceForge runtime packages.
 
-Project:
-
-```text
-tools/
-└── SliceForge.Cli/
-```
-
-Future install:
-
-```bash
-dotnet tool install --global SliceForge.Cli
-```
-
-Future command:
-
-```bash
-sliceforge new
-```
-
-## 12.1 CLI responsibility
-
-The CLI owns:
+Supported commands:
 
 ```text
-prompts
-validation
-choice dependencies
-generation plan
-template invocation
-progress output
-friendly errors
+sliceforge                 compact branded root screen
+sliceforge --help          standard command-line help
+sliceforge --version       exact package version and newline
+sliceforge version         exact package version and newline
+sliceforge new [-n NAME] [-o DIRECTORY]
+sliceforge doctor          local SDK and template checks only
 ```
 
-The CLI does **not** own application architecture.
+The root screen is restrained, has no color or animation, and falls back to
+ASCII when Unicode output is unavailable. `new` delegates to
+`dotnet new sliceforge-api` using argument-list process construction. It prompts
+for a name only when input is interactive; redirected input without a name
+returns usage. If the template is absent, interactive use asks before running
+`dotnet new install SliceForge.Templates@<tool-version>` and retries generation;
+redirected execution never prompts or installs automatically. Requested output
+directories and SDK exit codes are forwarded, and cancellation stops the child
+process and returns the conventional interrupt exit code.
 
-Architecture remains in packages/templates.
+`doctor` uses local SDK-list and installed-template-list commands only. It does
+not access package feeds, install templates, restore projects, or inspect
+consumer source. Expanded project diagnostics remain Milestone 11 work.
 
-## 12.2 CLI structure
-
-Suggested:
-
-```text
-SliceForge.Cli/
-├── Commands/
-│   ├── NewCommand.cs
-│   ├── DoctorCommand.cs
-│   └── VersionCommand.cs
-│
-├── Interactive/
-│   ├── ProjectWizard.cs
-│   ├── PresetPrompt.cs
-│   └── ConfirmationPrompt.cs
-│
-├── Generation/
-│   ├── GenerationPlan.cs
-│   ├── ProjectGenerator.cs
-│   └── TemplateArguments.cs
-│
-└── Program.cs
-```
-
-## 12.3 UX goal
-
-Example:
-
-```text
-╭────────────────────────────────────────────╮
-│                 SliceForge                 │
-│      Modern .NET Application Builder       │
-╰────────────────────────────────────────────╯
-
-Project name
-> DispatchFlow
-
-Preset
-● Recommended
-○ Minimal
-○ Production
-○ Custom
-
-Architecture
-● Vertical Slice
-○ Vertical Slice with a separately approved optional mediator adapter
-
-Validation
-● FluentValidation
-○ None
-
-Observability
-● SliceForge logs, activities, and metrics
-○ None
-
-OpenTelemetry exporters and resource configuration are optional consumer-owned choices.
-
-Testing
-● xUnit
-○ None
-
-──────────────────────────────────────────────
-
-Project          DispatchFlow
-Framework        .NET 10
-Architecture     Vertical Slice
-Validation       FluentValidation
-Observability    SliceForge.Observability
-OpenTelemetry    consumer-configured (optional)
-Testing          xUnit
-
-Create project? Yes
-```
-
-Then:
-
-```text
-✓ Creating solution
-✓ Creating API project
-✓ Creating test project
-✓ Applying SliceForge packages
-✓ Restoring dependencies
-✓ Building solution
-
-Project created successfully.
-```
-
-Use a mature terminal UI library only after its current compatibility/license/version has been verified.
-
-## 12.4 Presets
-
-Initial future presets:
-
-```text
-Recommended
-Minimal
-Production
-Custom
-```
-
-Presets must resolve to explicit generation choices.
-
-They must not become hidden behavior impossible for the user to inspect.
+Package validation inspects the `DotnetTool` package metadata and payload,
+checks its System.CommandLine dependency and absence of SliceForge runtime
+dependencies, installs the tool into an isolated tool path and CLI home, and
+executes root/help/version/doctor/new. CLI-driven generation is restored from
+the local package feed and nuget.org, then built and tested. CI repeats these
+checks and never publishes packages.
 
 ---
 
@@ -2290,6 +2188,7 @@ Completed milestones:
 - Milestone 7: optional Logging & Observability sender decoration
 - Milestone 8: configuration audit and package validation
 - Milestone 9: content-only `SliceForge.Templates` package and isolated generated-app validation
+- Milestone 10: `SliceForge.Cli` preview global tool and isolated tool/template validation
 
 Runtime is separate from Core and uses exact concrete-message routing. It does
 not use MediatR, assembly scanning, polymorphic discovery, or a public
@@ -2314,10 +2213,11 @@ the consumer-owned HTTP flow with explicit routes, `IMessageSender`, and
 
 The configuration audit found no demonstrated options need and is complete
 without adding a configuration API. Package validation inspects the five
-synchronized library packages and consumes them in an isolated package-only
-smoke application. It also inspects the content-only template package,
-installs it in an isolated CLI home, and builds/tests the generated consumer.
-The CI workflow repeats those checks without publishing. Milestone 9 is
-complete as a preview template package; the next milestone is the separate
-interactive CLI. Do not make the template depend on CLI code or duplicate
-library implementation.
+synchronized libraries, the content-only template package, and the CLI tool.
+It consumes library packages in an isolated package-only smoke application,
+installs the template and CLI in isolated locations, executes the CLI commands,
+and builds/tests applications generated both directly and through the CLI. CI
+repeats those checks without publishing. Milestones 9 and 10 are complete as
+preview packages; Milestone 11 is the next step for expanded diagnostics.
+Keep the CLI independent from runtime libraries and keep generated architecture
+owned by the directly usable template.

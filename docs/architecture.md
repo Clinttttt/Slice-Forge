@@ -49,8 +49,9 @@ and `AddSliceForgeObservability()`. Runtime is registered before decorators;
 Validation precedes Observability when both are enabled.
 
 The public package set is `SliceForge.Core`, `SliceForge.Runtime`,
-`SliceForge.Validation`, `SliceForge.AspNetCore`, and
-`SliceForge.Observability`. All are versioned together as `0.1.0-preview.1`
+`SliceForge.Validation`, `SliceForge.AspNetCore`, `SliceForge.Observability`,
+`SliceForge.Templates`, and `SliceForge.Cli`. All are versioned together as
+`0.1.0-preview.1`
 and target `net10.0`. Project references pack as NuGet dependencies; sibling
 assemblies are not embedded. AspNetCore carries a `Microsoft.AspNetCore.App`
 framework reference and has no Runtime dependency. The preview uses Apache-2.0
@@ -64,8 +65,16 @@ a consumer whose API project references the five libraries through NuGet,
 whose versions are centrally managed in the generated application, and whose
 single example feature demonstrates explicit endpoint-to-handler dispatch.
 The template is validated by isolated installation, generation, package-feed
-restore, build, and HTTP integration test. The CLI remains a separate future
-tooling milestone.
+restore, build, and HTTP integration test.
+
+`SliceForge.Cli` is a .NET global tool and owns only command-line UX and
+orchestration. It delegates project generation to the installed
+`sliceforge-api` .NET template using `dotnet new`; it has no dependency on the
+SliceForge runtime libraries and does not generate application files itself.
+The template remains directly installable and usable without the CLI. The
+preview CLI has `new`, `doctor`, and `version` commands plus standard help and
+version switches. Doctor's checks are local and read-only; broader diagnostics
+remain deferred.
 
 Package dependencies are intentionally one-way:
 
@@ -75,4 +84,6 @@ SliceForge.Runtime        -> Core + DI.Abstractions
 SliceForge.Validation     -> Runtime + FluentValidation + DI.Abstractions
 SliceForge.AspNetCore     -> Core + Microsoft.AspNetCore.App framework
 SliceForge.Observability  -> Runtime + DI.Abstractions + Logging.Abstractions
+SliceForge.Cli            -> System.CommandLine tool payload; no SliceForge runtime packages
+SliceForge.Templates      -> template content only; no runtime dependencies
 ```
