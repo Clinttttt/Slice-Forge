@@ -57,6 +57,16 @@ framework reference and has no Runtime dependency. The preview uses Apache-2.0
 metadata and is validated from a local package feed by a clean consumer with no
 source-project references. Validation does not publish packages.
 
+`SliceForge.Templates` is a separate content-only NuGet template package at the
+same preview version. It has no dependency on SliceForge libraries and embeds
+no compiled assemblies. `dotnet new sliceforge-api -n DispatchFlow` generates
+a consumer whose API project references the five libraries through NuGet,
+whose versions are centrally managed in the generated application, and whose
+single example feature demonstrates explicit endpoint-to-handler dispatch.
+The template is validated by isolated installation, generation, package-feed
+restore, build, and HTTP integration test. The CLI remains a separate future
+tooling milestone.
+
 Package dependencies are intentionally one-way:
 
 ```text

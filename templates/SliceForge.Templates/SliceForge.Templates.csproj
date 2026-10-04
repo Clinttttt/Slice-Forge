@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>true</IsPackable>
+    <PackageId>SliceForge.Templates</PackageId>
+    <PackageType>Template</PackageType>
+    <Title>SliceForge Templates</Title>
+    <Description>Preview .NET 10 Minimal API and test project template using SliceForge packages.</Description>
+    <PackageTags>sliceforge templates dotnet-new scaffolding</PackageTags>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <IncludeContentInPack>true</IncludeContentInPack>
+    <ContentTargetFolders>content</ContentTargetFolders>
+    <NoDefaultExcludes>true</NoDefaultExcludes>
+    <EnableDefaultItems>false</EnableDefaultItems>
+    <IncludeSymbols>false</IncludeSymbols>
+    <!-- The content-only template intentionally has no lib/ref assembly target. -->
+    <NoWarn>$(NoWarn);NU5128</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="content/**/*"
+             Exclude="content/**/bin/**;content/**/obj/**"
+             Pack="true"
+             PackagePath="content/%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
+</Project>

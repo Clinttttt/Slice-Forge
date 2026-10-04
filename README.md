@@ -14,6 +14,7 @@ change before a stable release.
 | `SliceForge.Validation` | Optional FluentValidation sender decorator. |
 | `SliceForge.AspNetCore` | Expected Result-to-HTTP mapping; success responses remain application-owned. |
 | `SliceForge.Observability` | Optional .NET logging, activity, and metrics instrumentation. |
+| `SliceForge.Templates` | A `dotnet new` template for a .NET 10 Minimal API consumer. |
 
 Install only the capabilities your application uses. For example:
 
@@ -61,7 +62,23 @@ an OpenTelemetry dependency. Consumers own `service.name`, sampling, exporters,
 and telemetry backends.
 
 The packages are licensed under Apache-2.0. This preview does not include the
-planned project template, CLI, or diagnostic tooling.
+CLI or diagnostic tooling. The template package is also a preview and generates
+an application that consumes the five libraries above as NuGet packages.
+
+## Generate an application (preview)
+
+Install the template package and create a consumer application:
+
+```powershell
+dotnet new install SliceForge.Templates@0.1.0-preview.1
+dotnet new sliceforge-api -n DispatchFlow
+```
+
+The generated solution and projects use `DispatchFlow` as their identity and
+include one small, removable example vertical slice. The template maps its
+Minimal API endpoint explicitly and composes the five published SliceForge
+library packages; it does not add repository project references or a CLI
+dependency.
 
 ## Build and test
 

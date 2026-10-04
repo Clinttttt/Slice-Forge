@@ -1,0 +1,17 @@
+<Project>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageVersion Include="SliceForge.Core" Version="0.1.0-preview.1" />
+    <PackageVersion Include="SliceForge.Runtime" Version="0.1.0-preview.1" />
+    <PackageVersion Include="SliceForge.Validation" Version="0.1.0-preview.1" />
+    <PackageVersion Include="SliceForge.AspNetCore" Version="0.1.0-preview.1" />
+    <PackageVersion Include="SliceForge.Observability" Version="0.1.0-preview.1" />
+    <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.12" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageVersion Include="xunit" Version="2.9.3" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.4" />
+  </ItemGroup>
+</Project>

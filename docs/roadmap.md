@@ -12,8 +12,8 @@ The implementation is intentionally incremental:
 8. Logging and observability — completed
 9. Configuration audit — completed with no configuration API
 10. Package validation — completed locally; packages not published
-11. `dotnet new` template
-12. Interactive CLI
+11. `dotnet new` template — completed as a preview package
+12. Interactive CLI — next
 13. Diagnostics
 14. Real-world adoption
 
@@ -37,7 +37,14 @@ execution metrics using .NET instrumentation primitives. It does not depend on
 OpenTelemetry; consumers configure subscriptions, `service.name`, exporters,
 and sampling. Register it after Validation so it observes validation failures.
 Milestone 8 closes the configuration audit without adding an options API and
-validates the five synchronized `0.1.0-preview.1` packages through a local feed
-and isolated package-only consumer. CI repeats restore, formatting, build,
+validates the five synchronized `0.1.0-preview.1` libraries through a local
+feed and isolated package-only consumer. CI repeats restore, formatting, build,
 tests, pack, package inspection, and consumer execution; it never publishes.
-The next milestone is the `dotnet new` template.
+
+Milestone 9 adds the content-only `SliceForge.Templates` NuGet package. It
+generates a .NET 10 Minimal API and test solution from a neutral placeholder,
+using package references rather than SliceForge source projects. Its single
+removable example slice demonstrates explicit endpoint, sender, handler,
+Result, and HTTP mapping. CI installs it in an isolated template environment,
+generates `DispatchFlow`, and restores, builds, and tests that generated
+application from the local package feed. No CLI or endpoint discovery is added.

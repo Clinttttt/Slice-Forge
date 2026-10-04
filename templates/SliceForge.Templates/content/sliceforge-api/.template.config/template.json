@@ -1,0 +1,12 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "identity": "SliceForge.Templates.Api",
+  "name": "SliceForge Minimal API",
+  "shortName": "sliceforge-api",
+  "sourceName": "TemplateApp",
+  "preferNameDirectory": true,
+  "tags": {
+    "language": "C#",
+    "type": "project"
+  }
+}

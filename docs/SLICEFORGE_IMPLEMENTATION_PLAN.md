@@ -1772,83 +1772,54 @@ rewriting; do not silently change pack output.
 
 ---
 
-# 11. Milestone 10 — `dotnet new` Template
+# 11. Milestone 9 — `dotnet new` Template (completed as a preview)
 
-## Goal
+The content-only NuGet package is `SliceForge.Templates` at the synchronized
+`0.1.0-preview.1` version. It targets the .NET 10 template ecosystem, declares
+`PackageType=Template`, and contains no SliceForge runtime dependency or
+compiled assemblies.
 
-Generate a complete consumer application.
+Scriptable use:
 
-Template package:
-
-```text
-templates/
-└── SliceForge.Templates/
-```
-
-First target:
-
-```bash
+```powershell
+dotnet new install SliceForge.Templates@0.1.0-preview.1
 dotnet new sliceforge-api -n DispatchFlow
 ```
 
-Expected output:
+Generated application identity comes from the requested name, not SliceForge
+or author attribution:
 
 ```text
 DispatchFlow/
-├── src/
-│   └── DispatchFlow.Api/
-├── tests/
-│   └── DispatchFlow.Api.Tests/
-└── DispatchFlow.slnx
+├── Directory.Build.props
+├── Directory.Packages.props
+├── DispatchFlow.slnx
+├── src/DispatchFlow.Api/
+└── tests/DispatchFlow.Api.Tests/
 ```
 
-## 11.1 Template naming
+The generated API project uses package references to the five released
+SliceForge libraries. Their synchronized versions and test-only dependencies
+are centrally managed in the generated `Directory.Packages.props`. It includes
+one small, removable `Features/Examples/GetExample` slice. The endpoint is
+mapped explicitly and shows the consumer-owned flow from `IMessageSender`
+through `Result<T>` to `ToHttpResult`; no scanning, reflection, database,
+repository layer, or generated Todos domain is included. Runtime, Validation,
+and Observability are registered explicitly in that order of composition
+(Runtime first; Validation before the outer Observability decorator), and the
+application configures `AddProblemDetails()` and `UseExceptionHandler()`.
 
-Use a neutral source placeholder, for example:
-
-```text
-SampleProject
-```
-
-and configure template replacement so:
-
-```bash
--n Acme.Inventory
-```
-
-produces:
-
-```text
-Acme.Inventory.Api
-Acme.Inventory.Api.Tests
-Acme.Inventory.slnx
-```
-
-Do not put `SliceForge` into generated project namespaces.
-
-## 11.2 Initial template choices
-
-Keep the first version intentionally small.
-
-Possible first options:
-
-```text
---validation
---observability
---tests
-```
-
-Database/provider choices should come later unless the base template genuinely needs them.
-
-## 11.3 Template principle
-
-The template should compose already-tested SliceForge packages.
-
-It must not contain a second independent copy of core infrastructure.
+Package validation inspects the template manifest/content and rejects compiled
+SliceForge assemblies. It installs the local package with an isolated
+`DOTNET_CLI_HOME`, generates `DispatchFlow`, verifies generated identities and
+absence of repository project references, then restores from the local package
+feed plus nuget.org, builds, and runs the generated HTTP integration test. CI
+runs this flow on Ubuntu without modifying a developer's global template hive
+or publishing the package.
 
 ---
 
-# 12. Milestone 11 — Interactive CLI
+# 12. Milestone 10 — Interactive CLI
 
 ## Goal
 
@@ -1997,7 +1968,7 @@ They must not become hidden behavior impossible for the user to inspect.
 
 ---
 
-# 13. Milestone 12 — SliceForge Doctor / Diagnostics
+# 13. Milestone 11 — SliceForge Doctor / Diagnostics
 
 This is a later differentiating feature.
 
@@ -2032,7 +2003,7 @@ Do not build this before the basic package and template are stable.
 
 ---
 
-# 14. Milestone 13 — Real-World Adoption
+# 14. Milestone 12 — Real-World Adoption
 
 Use a real project such as DispatchFlow as a consumer.
 
@@ -2317,6 +2288,8 @@ Completed milestones:
 - Milestone 5: ASP.NET Core Result mapping
 - Milestone 6: end-to-end Todos Sample API
 - Milestone 7: optional Logging & Observability sender decoration
+- Milestone 8: configuration audit and package validation
+- Milestone 9: content-only `SliceForge.Templates` package and isolated generated-app validation
 
 Runtime is separate from Core and uses exact concrete-message routing. It does
 not use MediatR, assembly scanning, polymorphic discovery, or a public
@@ -2340,7 +2313,11 @@ the consumer-owned HTTP flow with explicit routes, `IMessageSender`, and
 `SliceForge.AspNetCore` remains independent of Runtime and Validation.
 
 The configuration audit found no demonstrated options need and is complete
-without adding a configuration API. Package validation is complete locally:
-the five synchronized preview packages are inspected and consumed by an
-isolated package-only smoke application. The CI workflow repeats those checks
-without publishing. The next milestone is the `dotnet new` template.
+without adding a configuration API. Package validation inspects the five
+synchronized library packages and consumes them in an isolated package-only
+smoke application. It also inspects the content-only template package,
+installs it in an isolated CLI home, and builds/tests the generated consumer.
+The CI workflow repeats those checks without publishing. Milestone 9 is
+complete as a preview template package; the next milestone is the separate
+interactive CLI. Do not make the template depend on CLI code or duplicate
+library implementation.
