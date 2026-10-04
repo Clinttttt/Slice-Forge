@@ -10,11 +10,12 @@ The implementation is intentionally incremental:
 6. ASP.NET Core Result mapping — completed
 7. Sample consumer API — completed
 8. Logging and observability — completed
-9. Configuration and package validation
-10. `dotnet new` template
-11. Interactive CLI
-12. Diagnostics
-13. Real-world adoption
+9. Configuration audit — completed with no configuration API
+10. Package validation — completed locally; packages not published
+11. `dotnet new` template
+12. Interactive CLI
+13. Diagnostics
+14. Real-world adoption
 
 Milestone 5 adds Core-only Result-to-HTTP mapping in `SliceForge.AspNetCore`.
 Consumers own successful response semantics, explicit endpoint mapping,
@@ -35,4 +36,8 @@ emits structured outcome logs, command/query activities, and low-cardinality
 execution metrics using .NET instrumentation primitives. It does not depend on
 OpenTelemetry; consumers configure subscriptions, `service.name`, exporters,
 and sampling. Register it after Validation so it observes validation failures.
-The next milestone is configuration and package validation.
+Milestone 8 closes the configuration audit without adding an options API and
+validates the five synchronized `0.1.0-preview.1` packages through a local feed
+and isolated package-only consumer. CI repeats restore, formatting, build,
+tests, pack, package inspection, and consumer execution; it never publishes.
+The next milestone is the `dotnet new` template.

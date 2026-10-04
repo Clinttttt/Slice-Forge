@@ -1,0 +1,3 @@
+<Project>
+  <!-- Stop parent repository targets from flowing into the isolated consumer. -->
+</Project>

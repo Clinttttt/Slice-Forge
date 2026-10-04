@@ -1,6 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <IsPackable>true</IsPackable>
+    <PackageId>SliceForge.Validation</PackageId>
+    <Description>Optional FluentValidation sender decorator for SliceForge.</Description>
+    <PackageTags>sliceforge;validation;fluentvalidation</PackageTags>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <TargetFramework>net10.0</TargetFramework>
   </PropertyGroup>
 

@@ -1709,80 +1709,66 @@ feat(observability): add sender execution instrumentation
 
 ---
 
-# 9. Milestone 8 — Configuration Model
+# 9. Milestone 8 — Configuration Audit (completed; no API added)
 
-## Goal
-
-Support sensible defaults without forcing every capability.
-
-Target concept:
+The Sample API demonstrates no setting that requires a shared SliceForge
+configuration model. Explicit feature registration is the composition and
+configuration mechanism:
 
 ```csharp
-builder.Services
-    .AddSliceForgeRuntime()
-    .AddSliceForgeValidation();
+builder.Services.AddSliceForgeRuntime();
+builder.Services.AddSliceForgeValidation();
+builder.Services.AddSliceForgeObservability();
 ```
 
-But avoid creating dozens of meaningless booleans.
+Register Runtime first, then handlers and validators, then sender decorators in
+the intended order. Do not add `SliceForgeOptions`, `AddSliceForge`, feature
+booleans, or placeholder Validation/Observability options without a demonstrated
+consumer-controlled setting. Database and authentication configuration remain
+consumer-owned. Endpoint discovery is not provided and has no options.
 
-Add feature-specific options only when a real consumer-controlled setting is
-demonstrated. Observability currently has no options; do not add placeholder
-Logging or Observability sections to a shared options object.
-
-Do not add endpoint options for endpoint discovery, which SliceForge does not
-provide. Do not place database/authentication configuration in SliceForge
-options; those remain consumer-owned.
+This audit is complete without production configuration API.
 
 ---
 
-# 10. Milestone 9 — Package Validation
+# 10. Milestone 8 — Package Validation (completed locally; not published)
 
-Before templates or CLI, test actual NuGet consumption.
+The five public packages target `net10.0` and share version
+`0.1.0-preview.1`: `SliceForge.Core`, `SliceForge.Runtime`,
+`SliceForge.Validation`, `SliceForge.AspNetCore`, and
+`SliceForge.Observability`. Shared package metadata is centralized; package
+identity, description, and tags remain in each packable project. The packages
+use Apache-2.0 metadata and include the root README. Do not publish from CI or
+from this repository workflow without a separate release decision.
 
-## 10.1 Package metadata
-
-Add professional package metadata.
-
-Example categories:
-
-```xml
-<PackageId>SliceForge.Core</PackageId>
-<Authors>Clint Villanueva</Authors>
-<Description>...</Description>
-<PackageTags>dotnet;vertical-slice;cqrs;aspnetcore</PackageTags>
-<RepositoryUrl>...</RepositoryUrl>
-<PackageReadmeFile>README.md</PackageReadmeFile>
-```
-
-Choose and document a license before public publishing.
-
-## 10.2 Versioning
-
-Start pre-1.0.
-
-Example:
-
-```text
-0.1.0-preview.1
-```
-
-Do not begin at `1.0.0`.
-
-## 10.3 Pack locally
+Generate packages and symbols locally:
 
 ```powershell
-dotnet pack SliceForge.slnx -c Release
+dotnet pack SliceForge.slnx -c Release -o artifacts/packages
+pwsh -File scripts/validate-packages.ps1
 ```
 
-Create a local feed, for example:
+The validator inspects package contents and nuspec dependency constraints,
+then copies `eng/package-validation` to an isolated consumer under
+`artifacts/package-validation`. That consumer has its own build properties,
+central package versions, NuGet sources, and package cache; it references all
+five SliceForge packages and has no project or source-tree references. It uses
+`Microsoft.NET.Sdk` to verify the AspNetCore package's transitive shared
+framework reference, along with Runtime dispatch, Validation, and outer
+Observability behavior through the generated packages.
 
-```text
-C:\dev\NuGetLocal
-```
+Package validation is complete only when the full repository gates pass, all
+five `.nupkg` and `.snupkg` files pass content and metadata inspection, and the
+isolated consumer restores, builds, and runs using the local feed plus
+nuget.org. The GitHub Actions workflow performs those checks and never
+publishes packages.
 
-Install the generated packages into a clean throwaway consumer project.
-
-Do not consider packaging complete until installation works without project references.
+Inspect generated nuspec versions rather than assuming Central Package
+Management creates exact dependency pins. The current pack output uses bare
+minimum versions for package dependencies; in particular, SliceForge sibling
+dependencies have no upper bound on pre-1.0 releases. Record this compatibility
+risk and request an owner decision before introducing custom dependency-range
+rewriting; do not silently change pack output.
 
 ---
 
@@ -2351,5 +2337,10 @@ The Sample API demonstrates
 the consumer-owned HTTP flow with explicit routes, `IMessageSender`, and
 `ToHttpResult`; the application configures `AddProblemDetails()` and
 `UseExceptionHandler()` directly. Endpoint discovery remains deferred, and
-`SliceForge.AspNetCore` remains independent of Runtime and Validation. The next
-milestone is Configuration and Package Validation.
+`SliceForge.AspNetCore` remains independent of Runtime and Validation.
+
+The configuration audit found no demonstrated options need and is complete
+without adding a configuration API. Package validation is complete locally:
+the five synchronized preview packages are inspected and consumed by an
+isolated package-only smoke application. The CI workflow repeats those checks
+without publishing. The next milestone is the `dotnet new` template.

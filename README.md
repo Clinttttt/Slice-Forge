@@ -1,27 +1,67 @@
 # SliceForge
 
-SliceForge is an early-stage toolkit for building composable .NET applications with Vertical Slice Architecture. The repository has completed the repository foundation, Core result model, messaging contracts, Runtime execution, optional Validation, ASP.NET Core Result mapping, the end-to-end Sample API, and optional Logging & Observability.
+SliceForge is an early-stage toolkit for building composable .NET applications
+with Vertical Slice Architecture. The `0.1.0-preview.1` packages target .NET 10
+and are versioned as a coordinated preview set. APIs and package boundaries may
+change before a stable release.
 
-The current package boundaries are intentionally explicit:
+## Packages
 
-- `SliceForge.Core` contains framework-independent building blocks.
-- `SliceForge.Runtime` contains explicit message routing and dependency-injection integration over Core.
-- `SliceForge.Validation` optionally decorates Runtime message sending with explicit FluentValidation routes.
-- `SliceForge.Observability` optionally decorates message sending with structured logs, activities, and metrics.
-- `SliceForge.AspNetCore` maps Core Results to ASP.NET Core HTTP results and references only `SliceForge.Core` plus the `Microsoft.AspNetCore.App` shared framework.
+| Package | Responsibility |
+|---|---|
+| `SliceForge.Core` | Framework-independent results, errors, and messaging contracts. |
+| `SliceForge.Runtime` | Explicit command/query routing and handler registration. |
+| `SliceForge.Validation` | Optional FluentValidation sender decorator. |
+| `SliceForge.AspNetCore` | Expected Result-to-HTTP mapping; success responses remain application-owned. |
+| `SliceForge.Observability` | Optional .NET logging, activity, and metrics instrumentation. |
 
-Runtime owns no assembly scanning, polymorphic routing, validation, logging, or mediator dependency. Observability uses built-in .NET instrumentation and Logging abstractions; OpenTelemetry exporters and resource identity are optional consumer configuration. Consumer applications own their business rules, persistence, authentication, and provider integrations.
+Install only the capabilities your application uses. For example:
 
-ASP.NET endpoints are mapped explicitly by consumer applications. `ToHttpResult`
-maps expected failures while success callbacks preserve consumer-selected
-responses. Consumers configure `AddProblemDetails()` and
-`UseExceptionHandler()` directly; HTTP 500 is reserved for unexpected
-exceptions. SliceForge does not discover endpoints or choose authentication
-schemes.
+```powershell
+dotnet add package SliceForge.Core --version 0.1.0-preview.1
+dotnet add package SliceForge.Runtime --version 0.1.0-preview.1
+dotnet add package SliceForge.Validation --version 0.1.0-preview.1
+dotnet add package SliceForge.AspNetCore --version 0.1.0-preview.1
+dotnet add package SliceForge.Observability --version 0.1.0-preview.1
+```
 
-`SliceForge.Observability` emits command/query activities, low-cardinality
-execution metrics, and structured message outcome logs. It does not depend on
-OpenTelemetry or own the consumer's `service.name`, exporters, or sampling.
+Core is a transitive dependency of Runtime, Validation, and AspNetCore. A direct
+Core reference is also appropriate when application code directly consumes its
+result or messaging contracts. Validation brings FluentValidation as a package
+dependency. AspNetCore references the `Microsoft.AspNetCore.App` shared
+framework; it does not bring Runtime or Validation.
+
+## Composition
+
+Feature-specific registration is SliceForge's current composition mechanism;
+there is intentionally no umbrella options/configuration API. Register Runtime
+first, then handlers and validators, then decorators in the desired outer-to-inner
+order:
+
+```csharp
+builder.Services.AddSliceForgeRuntime();
+builder.Services.AddSliceForgeCommandHandler<CreateTodoCommand, Guid, CreateTodoHandler>();
+builder.Services.AddSliceForgeValidator<CreateTodoCommand, CreateTodoValidator>();
+builder.Services.AddSliceForgeValidation();
+builder.Services.AddSliceForgeObservability();
+```
+
+The resulting sender order is Observability → Validation → Runtime → handler.
+Handler and validator registration is explicit; SliceForge does not scan
+assemblies or select handlers polymorphically.
+
+ASP.NET endpoints and success responses are application-owned. The AspNetCore
+package's `ToHttpResult` maps expected errors, while the success callback can
+return `Created`, `Ok`, or `NoContent` as the application requires. Consumers
+configure `AddProblemDetails()` and `UseExceptionHandler()` directly. HTTP 500
+is reserved for unexpected exceptions.
+
+Observability uses built-in .NET instrumentation and Logging abstractions without
+an OpenTelemetry dependency. Consumers own `service.name`, sampling, exporters,
+and telemetry backends.
+
+The packages are licensed under Apache-2.0. This preview does not include the
+planned project template, CLI, or diagnostic tooling.
 
 ## Build and test
 

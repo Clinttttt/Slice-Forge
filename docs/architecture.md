@@ -39,3 +39,30 @@ endpoints explicitly, configure authentication, and register framework-owned
 exception handling. The project references Core and the ASP.NET Core shared
 framework only; it does not reference Runtime or Validation. Endpoint discovery
 is deferred unless the Sample API demonstrates a concrete need.
+
+## Configuration and package boundary
+
+The completed configuration audit found no consumer-controlled setting that
+justifies a shared options API. Explicit registration calls are the current
+composition mechanism: `AddSliceForgeRuntime()`, `AddSliceForgeValidation()`,
+and `AddSliceForgeObservability()`. Runtime is registered before decorators;
+Validation precedes Observability when both are enabled.
+
+The public package set is `SliceForge.Core`, `SliceForge.Runtime`,
+`SliceForge.Validation`, `SliceForge.AspNetCore`, and
+`SliceForge.Observability`. All are versioned together as `0.1.0-preview.1`
+and target `net10.0`. Project references pack as NuGet dependencies; sibling
+assemblies are not embedded. AspNetCore carries a `Microsoft.AspNetCore.App`
+framework reference and has no Runtime dependency. The preview uses Apache-2.0
+metadata and is validated from a local package feed by a clean consumer with no
+source-project references. Validation does not publish packages.
+
+Package dependencies are intentionally one-way:
+
+```text
+SliceForge.Core           (no package dependencies)
+SliceForge.Runtime        -> Core + DI.Abstractions
+SliceForge.Validation     -> Runtime + FluentValidation + DI.Abstractions
+SliceForge.AspNetCore     -> Core + Microsoft.AspNetCore.App framework
+SliceForge.Observability  -> Runtime + DI.Abstractions + Logging.Abstractions
+```

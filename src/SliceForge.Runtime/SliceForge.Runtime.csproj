@@ -6,6 +6,11 @@
   </ItemGroup>
 
   <PropertyGroup>
+    <IsPackable>true</IsPackable>
+    <PackageId>SliceForge.Runtime</PackageId>
+    <Description>Explicit command and query routing runtime for SliceForge.</Description>
+    <PackageTags>sliceforge;runtime;messaging;commands;queries</PackageTags>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <TargetFramework>net10.0</TargetFramework>
   </PropertyGroup>
 
