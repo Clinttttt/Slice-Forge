@@ -8,8 +8,8 @@ The implementation is intentionally incremental:
 4. Runtime execution and explicit handler registration — completed
 5. Validation — completed
 6. ASP.NET Core Result mapping — completed
-7. Sample consumer API — next
-8. Logging and observability
+7. Sample consumer API — completed
+8. Logging and observability — next
 9. Configuration and package validation
 10. `dotnet new` template
 11. Interactive CLI
@@ -22,3 +22,11 @@ authentication configuration, and ASP.NET Core exception middleware setup.
 Endpoint discovery remains deferred. Validation is an optional sender
 decorator outside Core and Runtime; Runtime itself remains free of validation,
 logging, and mediator dependencies.
+
+Milestone 6 is demonstrated by the Todos Sample API. Its explicitly mapped
+Minimal API routes exercise typed command, non-generic command, and query
+dispatch; FluentValidation through the optional sender decorator; and
+consumer-owned Created/OK/NoContent responses. A test-only
+`Microsoft.AspNetCore.Mvc.Testing` 10.0.12 project verifies the complete HTTP
+flow with a fresh in-memory store per test. The next milestone is Logging &
+Observability.

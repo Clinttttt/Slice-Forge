@@ -12,6 +12,7 @@
     <Project Path="tests/SliceForge.AspNetCore.Tests/SliceForge.AspNetCore.Tests.csproj" />
     <Project Path="tests/SliceForge.Core.Tests/SliceForge.Core.Tests.csproj" />
     <Project Path="tests/SliceForge.Runtime.Tests/SliceForge.Runtime.Tests.csproj" />
+    <Project Path="tests/SliceForge.Sample.Api.Tests/SliceForge.Sample.Api.Tests.csproj" />
     <Project Path="tests/SliceForge.Validation.Tests/SliceForge.Validation.Tests.csproj" />
   </Folder>
 </Solution>

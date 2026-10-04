@@ -1526,70 +1526,64 @@ feat(aspnetcore): add result HTTP mapping
 
 Use SliceForge as an external consumer would.
 
-Suggested feature:
+Completed feature:
 
 ```text
 samples/SliceForge.Sample.Api/
-└── Features/
-    └── Users/
-        ├── Create/
-        │   ├── Command.cs
-        │   ├── Validator.cs
-        │   ├── Handler.cs
-        │   └── Endpoint.cs
-        └── GetById/
-            ├── Query.cs
-            ├── Handler.cs
-            └── Endpoint.cs
+├── Features/Todos/Create/
+│   ├── CreateTodoCommand.cs
+│   ├── CreateTodoValidator.cs
+│   ├── CreateTodoHandler.cs
+│   └── CreateTodoEndpoint.cs
+├── Features/Todos/GetById/
+│   ├── GetTodoQuery.cs
+│   ├── GetTodoHandler.cs
+│   └── GetTodoEndpoint.cs
+├── Features/Todos/Complete/
+│   ├── CompleteTodoCommand.cs
+│   ├── CompleteTodoHandler.cs
+│   └── CompleteTodoEndpoint.cs
+├── Features/Todos/TodoResponse.cs
+└── Infrastructure/TodoStore.cs
 ```
 
-The sample API is not documentation decoration.
+The sample is a compatibility and usability test. It demonstrates `ICommand<TResponse>`, `ICommand`, and `IQuery<TResponse>`, explicit handler and validator registration, exact Runtime routing, optional Validation decoration, and consumer-owned HTTP success responses. `TodoStore` is a concrete lock-protected in-memory dictionary; persistence, repositories, and UnitOfWork are out of scope.
 
-It is a real compatibility test.
+The sample API directly references Core, Runtime, Validation, and AspNetCore because its source consumes all four packages. Its HTTP integration test project references the API and uses `Microsoft.AspNetCore.Mvc.Testing` 10.0.12 as a centrally managed, test-only dependency.
 
-## Target Program.cs experience
+## Consumer registration and explicit routes
 
-Aim toward:
+Runtime is registered before Validation; handlers and validators are explicit and registered before building the service provider:
 
 ```csharp
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services
-    .AddSliceForgeRuntime()
-    .AddSliceForgeValidator<CreateUserCommand, CreateUserValidator>()
-    .AddSliceForgeValidation();
 builder.Services.AddProblemDetails();
+builder.Services.AddSliceForgeRuntime();
+builder.Services.AddSingleton<TodoStore>();
+builder.Services.AddSliceForgeCommandHandler<CreateTodoCommand, Guid, CreateTodoHandler>();
+builder.Services.AddSliceForgeCommandHandler<CompleteTodoCommand, CompleteTodoHandler>();
+builder.Services.AddSliceForgeQueryHandler<GetTodoQuery, TodoResponse, GetTodoHandler>();
+builder.Services.AddSliceForgeValidator<CreateTodoCommand, CreateTodoValidator>();
+builder.Services.AddSliceForgeValidation();
 
 var app = builder.Build();
 
 app.UseExceptionHandler();
-app.MapPost("/users", async (
-    CreateUserRequest request,
-    IMessageSender sender,
-    CancellationToken cancellationToken) =>
-{
-    Result<Guid> result = await sender.SendCommandAsync<Guid>(
-        new CreateUserCommand(request.Name),
-        cancellationToken);
-
-    return result.ToHttpResult(id => Results.Created($"/users/{id}", new { id }));
-});
+CreateTodoEndpoint.Map(app);
+GetTodoEndpoint.Map(app);
+CompleteTodoEndpoint.Map(app);
 
 app.Run();
 ```
 
-Exact API may evolve before 1.0.
+Routes are mapped explicitly; there is no `IEndpoint`, endpoint discovery, assembly scanning, controller, or `MapSliceForgeEndpoints` API. Every endpoint injects `IMessageSender`, passes its request cancellation token unchanged, and maps the completed result using `ToHttpResult`.
 
-Prioritize:
-
-- clarity,
-- discoverability,
-- explicit behavior,
-- minimal hidden magic.
+The routes are `POST /todos` (`ICommand<Guid>` → 201 Created), `GET /todos/{id:guid}` (`IQuery<TodoResponse>` → 200 OK or NotFound), and `PUT /todos/{id:guid}/complete` (`ICommand` → 204 No Content, NotFound, or Conflict). Invalid create input is returned by SliceForge.Validation; missing todos use `ErrorType.NotFound`, and already-completed todos use `ErrorType.Conflict`. These expected outcomes are Results, not exceptions.
 
 ### Milestone 6 exit condition
 
-A developer can understand the package by opening the sample and following one vertical slice end-to-end.
+Completed: eight HTTP integration tests use a fresh `WebApplicationFactory<Program>` per test and cover valid/invalid POST, POST then GET, missing GET, successful completion, repeated completion, concurrent completion, and missing completion. The tests use no real ports, sleeps, external resources, shared mutable test state, or order-dependent setup.
 
 Suggested commit:
 
@@ -2307,6 +2301,7 @@ Completed milestones:
 - Milestone 3: Runtime execution with explicit handler registration
 - Milestone 4: optional Validation sender decoration
 - Milestone 5: ASP.NET Core Result mapping
+- Milestone 6: end-to-end Todos Sample API
 
 Runtime is separate from Core and uses exact concrete-message routing. It does
 not use MediatR, assembly scanning, polymorphic discovery, or a public
@@ -2321,8 +2316,8 @@ sender and must not assume a pre-existing MediatR pipeline or reintroduce
 mediator types into Core. Historical references above preserve the original
 decision trail; they are not implementation instructions.
 
-The next milestone is the Sample API. It should map routes explicitly, use
-`IMessageSender` from the consumer application, call `ToHttpResult` with
-consumer-chosen success responses, and configure `AddProblemDetails()` plus
-`UseExceptionHandler()` directly. It must not add endpoint discovery or make
-`SliceForge.AspNetCore` depend on Runtime.
+The next milestone is Logging & Observability. The Sample API demonstrates
+the consumer-owned HTTP flow with explicit routes, `IMessageSender`, and
+`ToHttpResult`; the application configures `AddProblemDetails()` and
+`UseExceptionHandler()` directly. Endpoint discovery remains deferred, and
+`SliceForge.AspNetCore` remains independent of Runtime and Validation.

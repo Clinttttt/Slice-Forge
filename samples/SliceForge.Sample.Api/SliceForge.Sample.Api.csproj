@@ -1,6 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\SliceForge.Core\SliceForge.Core.csproj" />
+    <ProjectReference Include="..\..\src\SliceForge.Runtime\SliceForge.Runtime.csproj" />
+    <ProjectReference Include="..\..\src\SliceForge.Validation\SliceForge.Validation.csproj" />
     <ProjectReference Include="..\..\src\SliceForge.AspNetCore\SliceForge.AspNetCore.csproj" />
   </ItemGroup>
 
