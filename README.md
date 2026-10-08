@@ -12,7 +12,7 @@ before a stable release.
 | Package | Responsibility |
 |---|---|
 | `SliceForge.Core` | Framework-independent results, errors, and messaging contracts. |
-| `SliceForge.Runtime` | Explicit command/query routing and handler registration. |
+| `SliceForge.Runtime` | Exact command/query routing, explicit registration, and optional startup discovery from a supplied assembly. |
 | `SliceForge.Validation` | Optional FluentValidation sender decorator. |
 | `SliceForge.AspNetCore` | Expected Result-to-HTTP mapping; success responses remain application-owned. |
 | `SliceForge.Observability` | Optional .NET logging, activity, and metrics instrumentation. |
@@ -44,15 +44,25 @@ order:
 
 ```csharp
 builder.Services.AddSliceForgeRuntime();
-builder.Services.AddSliceForgeCommandHandler<CreateTodoCommand, Guid, CreateTodoHandler>();
+builder.Services.AddSliceForgeHandlersFromAssembly(typeof(ApplicationAssemblyMarker).Assembly);
 builder.Services.AddSliceForgeValidator<CreateTodoCommand, CreateTodoValidator>();
 builder.Services.AddSliceForgeValidation();
 builder.Services.AddSliceForgeObservability();
 ```
 
 The resulting sender order is Observability → Validation → Runtime → handler.
-Handler and validator registration is explicit; SliceForge does not scan
-assemblies or select handlers polymorphically.
+Handlers may instead be registered individually with the existing explicit
+methods. Assembly discovery is opt-in, scans only the supplied assembly during
+registration, and does not change exact concrete-message routing. Validator
+registration remains explicit; endpoint discovery and request-time scanning
+are not provided.
+
+Define the marker type in the application assembly that contains the handlers
+you want Runtime to discover:
+
+```csharp
+public sealed class ApplicationAssemblyMarker { }
+```
 
 ASP.NET endpoints and success responses are application-owned. The AspNetCore
 package's `ToHttpResult` maps expected errors, while the success callback can

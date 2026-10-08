@@ -5,7 +5,7 @@ The implementation is intentionally incremental:
 1. Repository foundation — completed
 2. Core result and error model — completed
 3. Messaging abstractions — completed
-4. Runtime execution and explicit handler registration — completed
+4. Runtime execution with explicit registration and optional handler discovery — completed
 5. Validation — completed
 6. ASP.NET Core Result mapping — completed
 7. Sample consumer API — completed
@@ -14,8 +14,9 @@ The implementation is intentionally incremental:
 10. Package validation — completed and exercised against published preview packages
 11. `dotnet new` template — completed as a preview package
 12. `SliceForge.Cli` global tool — completed as a preview package
-13. Diagnostics — next
-14. Real-world adoption
+13. Milestone 11A: opt-in Runtime handler assembly discovery — completed
+14. Diagnostics — planned
+15. Real-world adoption
 
 Milestone 5 adds Core-only Result-to-HTTP mapping in `SliceForge.AspNetCore`.
 Consumers own successful response semantics, explicit endpoint mapping,
@@ -58,3 +59,11 @@ and template checks and does not install or restore anything. Package
 validation installs the tool and template into isolated locations, exercises
 the commands, generates `CliDispatchFlow`, and restores/builds/tests that
 consumer using the local package feed. Nothing is published.
+
+Milestone 11A adds optional startup-only handler discovery to Runtime. The
+consumer supplies exactly one assembly; supported handlers are registered
+through the existing exact-message route catalog. Manual registration remains
+available, duplicate routes fail during registration, and there is no
+request-time scan. Validator and endpoint discovery remain outside this
+milestone; endpoint mapping stays explicit. Reflection-based discovery is not
+claimed to be trimming- or Native-AOT-safe.

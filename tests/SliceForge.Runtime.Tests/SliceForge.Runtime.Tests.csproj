@@ -19,6 +19,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\SliceForge.Runtime\SliceForge.Runtime.csproj" />
+    <ProjectReference Include="..\SliceForge.Runtime.DiscoveryFixtures\SliceForge.Runtime.DiscoveryFixtures.csproj" />
+    <ProjectReference Include="..\SliceForge.Runtime.DuplicateFixtures\SliceForge.Runtime.DuplicateFixtures.csproj" />
+    <ProjectReference Include="..\SliceForge.Runtime.TypeLoadFixtures\SliceForge.Runtime.TypeLoadFixtures.csproj" />
   </ItemGroup>
 
 </Project>

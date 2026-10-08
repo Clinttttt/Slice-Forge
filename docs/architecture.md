@@ -12,11 +12,22 @@ Consumer application
         └── SliceForge.Core
 ```
 
-`SliceForge.Core` must remain independent of ASP.NET Core and dependency injection. It must not reference HTTP status codes, `HttpContext`, minimal API result types, ASP.NET middleware, or mediator libraries. Result-to-HTTP mapping belongs in `SliceForge.AspNetCore`; consumer applications own endpoint mapping and discovery is deferred.
+`SliceForge.Core` must remain independent of ASP.NET Core and dependency injection. It must not reference HTTP status codes, `HttpContext`, minimal API result types, ASP.NET middleware, or mediator libraries. Result-to-HTTP mapping belongs in `SliceForge.AspNetCore`; consumer applications own endpoint mapping, and endpoint discovery remains deferred.
+
+`SliceForge.Runtime` supports explicit handler registration and optional,
+startup-only discovery from one assembly supplied by the consumer through
+`AddSliceForgeHandlersFromAssembly(Assembly)`. Discovery recognizes only the
+three supported command/query handler contracts and registers them in the
+existing exact-message route catalog. It does not scan loaded/referenced
+assemblies, discover validators or endpoints, or perform request-time
+reflection. Explicit handler registration remains supported.
 
 `SliceForge.Validation` is optional and decorates the scoped Runtime sender with
 explicit, exact-concrete-type FluentValidation routes. Runtime remains free of
 validation dependencies.
+
+Validator registration remains explicit; Runtime handler discovery does not
+discover validators.
 
 `SliceForge.Observability` is optional and decorates the scoped Runtime sender
 with structured message logs, `ActivitySource` activities, and `Meter`

@@ -59,9 +59,7 @@ meterListener.Start();
 
 ServiceCollection services = new();
 services.AddSliceForgeRuntime();
-services.AddSliceForgeCommandHandler<ValidatedCommand, Guid, ValidatedCommandHandler>();
-services.AddSliceForgeCommandHandler<MarkerCommand, MarkerCommandHandler>();
-services.AddSliceForgeQueryHandler<EchoQuery, string, EchoQueryHandler>();
+services.AddSliceForgeHandlersFromAssembly(typeof(ValidatedCommand).Assembly);
 services.AddSliceForgeValidator<ValidatedCommand, ValidatedCommandValidator>();
 services.AddSliceForgeValidation();
 services.AddSliceForgeObservability();

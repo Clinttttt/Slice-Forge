@@ -1,3 +1,4 @@
+using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using SliceForge.Messaging;
@@ -30,6 +31,52 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
+    /// <summary>
+    /// Discovers supported command and query handlers in the supplied assembly and registers their exact routes.
+    /// </summary>
+    /// <remarks>
+    /// Only the supplied assembly is inspected. Abstract, interface, and open generic types are ignored; duplicate
+    /// message routes fail during registration. Assemblies with no supported handlers have no effect. Discovery does
+    /// not include validators or endpoints.
+    /// </remarks>
+    /// <param name="services">The service collection to configure.</param>
+    /// <param name="assembly">The single consumer assembly to inspect.</param>
+    /// <returns>The same service collection for further configuration.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="services"/> or <paramref name="assembly"/> is null.</exception>
+    /// <exception cref="InvalidOperationException">The assembly contains conflicting routes or cannot be inspected.</exception>
+    public static IServiceCollection AddSliceForgeHandlersFromAssembly(
+        this IServiceCollection services,
+        Assembly assembly)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(assembly);
+
+        IReadOnlyList<DiscoveredHandlerRegistration> registrations = HandlerAssemblyScanner.Discover(assembly);
+        if (registrations.Count == 0)
+        {
+            return services;
+        }
+
+        RouteRegistrationStore? existingStore = FindRegistrationStore(services);
+        HandlerAssemblyScanner.ThrowIfConflictingRoutes(
+            assembly,
+            registrations,
+            existingStore?.Snapshot() ?? []);
+
+        RouteRegistrationStore registrationStore = existingStore ?? GetOrCreateRegistrationStore(services);
+        foreach (DiscoveredHandlerRegistration registration in registrations)
+        {
+            HandlerRouteRegistration.Register(
+                services,
+                registrationStore,
+                registration.Route,
+                registration.HandlerContract,
+                registration.HandlerType);
+        }
+
+        return services;
+    }
+
     /// <summary>Registers one non-generic command handler and its exact route.</summary>
     public static IServiceCollection AddSliceForgeCommandHandler<TCommand, THandler>(
         this IServiceCollection services)
@@ -39,8 +86,12 @@ public static class ServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(services);
 
         RouteRegistrationStore registrationStore = GetOrCreateRegistrationStore(services);
-        registrationStore.Add(new CommandRoute<TCommand>());
-        services.AddTransient<ICommandHandler<TCommand>, THandler>();
+        HandlerRouteRegistration.Register(
+            services,
+            registrationStore,
+            new CommandRoute<TCommand>(),
+            typeof(ICommandHandler<TCommand>),
+            typeof(THandler));
 
         return services;
     }
@@ -54,8 +105,12 @@ public static class ServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(services);
 
         RouteRegistrationStore registrationStore = GetOrCreateRegistrationStore(services);
-        registrationStore.Add(new TypedCommandRoute<TCommand, TResponse>());
-        services.AddTransient<ICommandHandler<TCommand, TResponse>, THandler>();
+        HandlerRouteRegistration.Register(
+            services,
+            registrationStore,
+            new TypedCommandRoute<TCommand, TResponse>(),
+            typeof(ICommandHandler<TCommand, TResponse>),
+            typeof(THandler));
 
         return services;
     }
@@ -69,13 +124,30 @@ public static class ServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(services);
 
         RouteRegistrationStore registrationStore = GetOrCreateRegistrationStore(services);
-        registrationStore.Add(new QueryRoute<TQuery, TResponse>());
-        services.AddTransient<IQueryHandler<TQuery, TResponse>, THandler>();
+        HandlerRouteRegistration.Register(
+            services,
+            registrationStore,
+            new QueryRoute<TQuery, TResponse>(),
+            typeof(IQueryHandler<TQuery, TResponse>),
+            typeof(THandler));
 
         return services;
     }
 
     private static RouteRegistrationStore GetOrCreateRegistrationStore(IServiceCollection services)
+    {
+        RouteRegistrationStore? existingStore = FindRegistrationStore(services);
+        if (existingStore is not null)
+        {
+            return existingStore;
+        }
+
+        RouteRegistrationStore newRegistrationStore = new();
+        services.AddSingleton(newRegistrationStore);
+        return newRegistrationStore;
+    }
+
+    private static RouteRegistrationStore? FindRegistrationStore(IServiceCollection services)
     {
         foreach (ServiceDescriptor descriptor in services)
         {
@@ -86,8 +158,6 @@ public static class ServiceCollectionExtensions
             }
         }
 
-        RouteRegistrationStore newRegistrationStore = new();
-        services.AddSingleton(newRegistrationStore);
-        return newRegistrationStore;
+        return null;
     }
 }

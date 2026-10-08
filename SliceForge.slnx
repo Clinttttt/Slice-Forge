@@ -17,6 +17,10 @@
     <Project Path="tests/SliceForge.Core.Tests/SliceForge.Core.Tests.csproj" />
     <Project Path="tests/SliceForge.Observability.Tests/SliceForge.Observability.Tests.csproj" />
     <Project Path="tests/SliceForge.Runtime.Tests/SliceForge.Runtime.Tests.csproj" />
+    <Project Path="tests/SliceForge.Runtime.DiscoveryFixtures/SliceForge.Runtime.DiscoveryFixtures.csproj" />
+    <Project Path="tests/SliceForge.Runtime.DuplicateFixtures/SliceForge.Runtime.DuplicateFixtures.csproj" />
+    <Project Path="tests/SliceForge.Runtime.TypeLoadDependency/SliceForge.Runtime.TypeLoadDependency.csproj" />
+    <Project Path="tests/SliceForge.Runtime.TypeLoadFixtures/SliceForge.Runtime.TypeLoadFixtures.csproj" />
     <Project Path="tests/SliceForge.Sample.Api.Tests/SliceForge.Sample.Api.Tests.csproj" />
     <Project Path="tests/SliceForge.Validation.Tests/SliceForge.Validation.Tests.csproj" />
     <Project Path="tests/SliceForge.Cli.Tests/SliceForge.Cli.Tests.csproj" />

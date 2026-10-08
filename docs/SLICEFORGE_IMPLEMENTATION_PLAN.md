@@ -1503,7 +1503,7 @@ middleware owns unexpected-exception handling and logging.
 
 Consumer endpoints explicitly map their routes, inject `IMessageSender` if
 needed, and choose success responses through `ToHttpResult`. Endpoint
-abstractions, endpoint discovery, assembly scanning, and Runtime integration
+abstractions, endpoint discovery, endpoint assembly scanning, and Runtime integration
 are deferred; the Sample API must demonstrate a real need before any such
 capability is reconsidered.
 
@@ -1880,9 +1880,7 @@ Potential checks:
 ```text
 ✓ SDK supported
 ✓ SliceForge packages compatible
-✓ command routes explicitly registered
-✓ query routes explicitly registered
-✓ handler routes explicitly registered
+✓ command/query handler routes registered manually or from an opted-in assembly
 ✓ SliceForge validators explicitly registered
 
 ✗ command has no handler
@@ -1892,7 +1890,7 @@ Potential checks:
 ```
 
 Endpoint discovery is not a SliceForge diagnostic because consumer endpoints
-are mapped explicitly and are not registered through SliceForge scanning.
+are mapped explicitly and are not included in Runtime handler discovery.
 
 Startup diagnostics may also become available programmatically.
 
@@ -2188,11 +2186,17 @@ Completed milestones:
 - Milestone 8: configuration audit and package validation
 - Milestone 9: content-only `SliceForge.Templates` package and isolated generated-app validation
 - Milestone 10: `SliceForge.Tool` preview global-tool package (implemented by `SliceForge.Cli`) and isolated tool/template validation
+- Milestone 11A: opt-in Runtime handler assembly discovery
 
-Runtime is separate from Core and uses exact concrete-message routing. It does
-not use MediatR, assembly scanning, polymorphic discovery, or a public
-pipeline abstraction. MediatR remains only a possible future optional adapter
-requiring separate product and licensing approval.
+Runtime is separate from Core and uses exact concrete-message routing. It
+supports explicit handler registration and optional startup-only discovery
+from one consumer-supplied assembly through
+`AddSliceForgeHandlersFromAssembly(Assembly)`. Discovery registers only the
+supported command/query handler contracts through the existing route catalog;
+it does not use MediatR, polymorphic route discovery, request-time scanning, or
+a public pipeline abstraction. Validator and endpoint discovery remain
+excluded. MediatR remains only a possible future optional adapter requiring
+separate product and licensing approval.
 
 The earlier illustrative CLI preset that coupled the architecture to a
 mediator is superseded. Future presets must describe `Vertical Slice` and may
@@ -2217,6 +2221,8 @@ It consumes library packages in an isolated package-only smoke application,
 installs the template and CLI in isolated locations, executes the CLI commands,
 and builds/tests applications generated both directly and through the CLI. CI
 repeats those checks without publishing. Milestones 9 and 10 are complete as
-preview packages; Milestone 11 is the next step for expanded diagnostics.
-Keep the CLI independent from runtime libraries and keep generated architecture
-owned by the directly usable template.
+preview packages. Milestone 11A adds opt-in handler discovery without changing
+the Runtime execution boundary; validator discovery is a separate future
+milestone. Diagnostics remains planned. Keep the CLI independent from runtime
+libraries and keep generated architecture owned by the directly usable
+template.
