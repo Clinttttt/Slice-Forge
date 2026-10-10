@@ -15,8 +15,9 @@ The implementation is intentionally incremental:
 11. `dotnet new` template — completed as a preview package
 12. `SliceForge.Cli` global tool — completed as a preview package
 13. Milestone 11A: opt-in Runtime handler assembly discovery — completed
-14. Diagnostics — planned
-15. Real-world adoption
+14. Milestone 11B: opt-in Validation validator assembly discovery — completed
+15. Diagnostics — planned
+16. Real-world adoption
 
 Milestone 5 adds Core-only Result-to-HTTP mapping in `SliceForge.AspNetCore`.
 Consumers own successful response semantics, explicit endpoint mapping,
@@ -67,3 +68,15 @@ available, duplicate routes fail during registration, and there is no
 request-time scan. Validator and endpoint discovery remain outside this
 milestone; endpoint mapping stays explicit. Reflection-based discovery is not
 claimed to be trimming- or Native-AOT-safe.
+
+Milestone 11B adds separate opt-in validator discovery to Validation through
+`AddSliceForgeValidatorsFromAssembly(Assembly)`. It inspects only the supplied
+assembly for concrete, closed `IValidator<TMessage>` implementations, preserves
+multiple validators per message, orders discovered validators by fully
+qualified validator type name, and appends them at the point of registration.
+Manual registration remains supported and duplicate validator/message pairs
+remain errors. Discovery feeds the existing validation registration store and
+route catalog; validators stay transient and resolve dependencies from the
+current scope. It does not alter Runtime handler discovery or endpoint mapping.
+Neither scanner is claimed to be trimming- or Native-AOT-safe; manual
+registration is the predictable option for those consumers.

@@ -510,9 +510,12 @@ Avoid duplicate exception logs. One layer should own exception logging.
 
 ### K. Reflection rules
 
-Reflection is not part of the current execution or endpoint model. Runtime
-routes and consumer endpoints are registered explicitly; do not add assembly
-scanning or reflection-based discovery without a separately approved feature.
+Reflection is not part of request-time execution or the endpoint model.
+Runtime handlers and Validation validators may each be discovered at startup
+only through their separate opt-in APIs, and only from the assembly explicitly
+supplied by the consumer. Endpoint mapping remains explicit; endpoint discovery,
+global assembly scanning, and request-time reflection are not supported. Do not
+add other discovery behavior without a separately approved feature.
 
 When reflection is introduced:
 
@@ -1347,9 +1350,19 @@ SliceForge.Validation
 ```
 
 FluentValidation is optional and is referenced only by the Validation package.
-Validators are registered explicitly with
-`AddSliceForgeValidator<TMessage, TValidator>()`; assembly scanning and
-base/interface discovery are not used.
+Validators may be registered explicitly with
+`AddSliceForgeValidator<TMessage, TValidator>()` or, since Milestone 11B,
+discovered at startup from one caller-supplied assembly using
+`AddSliceForgeValidatorsFromAssembly(Assembly)`. Discovery recognizes only
+concrete, closed `IValidator<TMessage>` contracts. It does not scan loaded or
+referenced assemblies, infer base-message routes, or run during request
+execution. Explicit registration remains supported.
+
+For each message, discovered validators are ordered by fully qualified
+validator type name and appended where the discovery call occurs. Earlier
+explicit registrations therefore run first; later explicit registrations run
+after discovered validators. Duplicate registrations of the same validator
+type for the same message remain configuration errors.
 
 ## 5.1 Required behavior semantics
 
@@ -1881,7 +1894,7 @@ Potential checks:
 ✓ SDK supported
 ✓ SliceForge packages compatible
 ✓ command/query handler routes registered manually or from an opted-in assembly
-✓ SliceForge validators explicitly registered
+✓ SliceForge validation routes registered explicitly or from an opted-in assembly
 
 ✗ command has no handler
 ✗ message has multiple handlers
@@ -2187,6 +2200,7 @@ Completed milestones:
 - Milestone 9: content-only `SliceForge.Templates` package and isolated generated-app validation
 - Milestone 10: `SliceForge.Tool` preview global-tool package (implemented by `SliceForge.Cli`) and isolated tool/template validation
 - Milestone 11A: opt-in Runtime handler assembly discovery
+- Milestone 11B: opt-in Validation validator assembly discovery
 
 Runtime is separate from Core and uses exact concrete-message routing. It
 supports explicit handler registration and optional startup-only discovery
@@ -2194,8 +2208,16 @@ from one consumer-supplied assembly through
 `AddSliceForgeHandlersFromAssembly(Assembly)`. Discovery registers only the
 supported command/query handler contracts through the existing route catalog;
 it does not use MediatR, polymorphic route discovery, request-time scanning, or
-a public pipeline abstraction. Validator and endpoint discovery remain
-excluded. MediatR remains only a possible future optional adapter requiring
+a public pipeline abstraction. Milestone 11B separately adds
+`AddSliceForgeValidatorsFromAssembly(Assembly)` in Validation. It inspects only
+the supplied assembly, discovers concrete closed `IValidator<TMessage>` types,
+and adds them to the existing validation registration store. For each message,
+discovered validators run in stable fully qualified type-name order at the
+registration point, preserving explicit registrations before and after the
+discovery call. Duplicate validator/message pairs are rejected. Neither
+scanner discovers endpoints or other assemblies. Reflection discovery is not
+claimed to be trimming- or Native-AOT-safe; explicit registrations remain
+available. MediatR remains only a possible future optional adapter requiring
 separate product and licensing approval.
 
 The earlier illustrative CLI preset that coupled the architecture to a
@@ -2221,8 +2243,8 @@ It consumes library packages in an isolated package-only smoke application,
 installs the template and CLI in isolated locations, executes the CLI commands,
 and builds/tests applications generated both directly and through the CLI. CI
 repeats those checks without publishing. Milestones 9 and 10 are complete as
-preview packages. Milestone 11A adds opt-in handler discovery without changing
-the Runtime execution boundary; validator discovery is a separate future
-milestone. Diagnostics remains planned. Keep the CLI independent from runtime
-libraries and keep generated architecture owned by the directly usable
-template.
+preview packages. Milestones 11A and 11B add independent opt-in startup
+discovery for handlers and validators without changing exact message routing
+or validation execution. Endpoint discovery remains deferred. Diagnostics
+remains planned. Keep the CLI independent from runtime libraries and keep
+generated architecture owned by the directly usable template.

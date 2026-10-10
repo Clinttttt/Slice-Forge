@@ -23,6 +23,7 @@
     <Project Path="tests/SliceForge.Runtime.TypeLoadFixtures/SliceForge.Runtime.TypeLoadFixtures.csproj" />
     <Project Path="tests/SliceForge.Sample.Api.Tests/SliceForge.Sample.Api.Tests.csproj" />
     <Project Path="tests/SliceForge.Validation.Tests/SliceForge.Validation.Tests.csproj" />
+    <Project Path="tests/SliceForge.Validation.DiscoveryFixtures/SliceForge.Validation.DiscoveryFixtures.csproj" />
     <Project Path="tests/SliceForge.Cli.Tests/SliceForge.Cli.Tests.csproj" />
   </Folder>
   <Folder Name="/tools/">

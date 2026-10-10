@@ -23,11 +23,20 @@ assemblies, discover validators or endpoints, or perform request-time
 reflection. Explicit handler registration remains supported.
 
 `SliceForge.Validation` is optional and decorates the scoped Runtime sender with
-explicit, exact-concrete-type FluentValidation routes. Runtime remains free of
-validation dependencies.
+exact-concrete-type FluentValidation routes. Validators can be registered
+explicitly or discovered at startup from one assembly explicitly supplied to
+`AddSliceForgeValidatorsFromAssembly(Assembly)`. Discovery recognizes concrete,
+closed `IValidator<TMessage>` implementations, including internal validators;
+it ignores abstract and open-generic types. Discovered validators for each
+message are sorted by fully qualified type name and appended in that order to
+any earlier explicit registrations. Later explicit registrations remain last.
+Validators are transient and resolve dependencies from the active scope.
 
-Validator registration remains explicit; Runtime handler discovery does not
-discover validators.
+Handler and validator discovery are separate opt-in operations over the same
+consumer-selected assembly. Each registers only its own contracts through its
+existing registration store; neither scans other assemblies, discovers
+endpoints, or adds request-time reflection. Explicit handler and validator
+registration remain supported.
 
 `SliceForge.Observability` is optional and decorates the scoped Runtime sender
 with structured message logs, `ActivitySource` activities, and `Meter`

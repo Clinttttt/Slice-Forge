@@ -44,8 +44,9 @@ order:
 
 ```csharp
 builder.Services.AddSliceForgeRuntime();
-builder.Services.AddSliceForgeHandlersFromAssembly(typeof(ApplicationAssemblyMarker).Assembly);
-builder.Services.AddSliceForgeValidator<CreateTodoCommand, CreateTodoValidator>();
+var applicationAssembly = typeof(ApplicationAssemblyMarker).Assembly;
+builder.Services.AddSliceForgeHandlersFromAssembly(applicationAssembly);
+builder.Services.AddSliceForgeValidatorsFromAssembly(applicationAssembly);
 builder.Services.AddSliceForgeValidation();
 builder.Services.AddSliceForgeObservability();
 ```
@@ -54,8 +55,12 @@ The resulting sender order is Observability → Validation → Runtime → handl
 Handlers may instead be registered individually with the existing explicit
 methods. Assembly discovery is opt-in, scans only the supplied assembly during
 registration, and does not change exact concrete-message routing. Validator
-registration remains explicit; endpoint discovery and request-time scanning
-are not provided.
+discovery is a separate opt-in API over the same caller-supplied assembly; it
+scans closed `IValidator<TMessage>` contracts at registration time only.
+Discovered validators are ordered by fully qualified type name per message and
+appended at the point discovery is registered, so explicit registrations before
+or after discovery retain their relative order. Explicit validator registration
+remains supported. Neither scanner discovers endpoints or scans at request time.
 
 Define the marker type in the application assembly that contains the handlers
 you want Runtime to discover:

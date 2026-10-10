@@ -12,7 +12,7 @@ internal sealed class ValidationRoute<TMessage> : IValidationRoute
     public ValidationRoute(Type validatorType)
     {
         MessageType = typeof(TMessage);
-        _validatorTypes = new[] { validatorType };
+        _validatorTypes = Array.AsReadOnly(new[] { validatorType });
     }
 
     private ValidationRoute(IReadOnlyList<Type> validatorTypes)
@@ -22,6 +22,8 @@ internal sealed class ValidationRoute<TMessage> : IValidationRoute
     }
 
     public Type MessageType { get; }
+
+    public IReadOnlyList<Type> ValidatorTypes => _validatorTypes;
 
     public IValidationRoute AddValidator(Type validatorType)
     {

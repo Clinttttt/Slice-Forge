@@ -1,3 +1,4 @@
+using System.Reflection;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -8,10 +9,52 @@ using SliceForge.Validation.Routing;
 namespace SliceForge.Validation.DependencyInjection;
 
 /// <summary>
-/// Registers explicit SliceForge validation routes and the validation sender decorator.
+/// Registers explicit or assembly-discovered validation routes and the validation sender decorator.
 /// </summary>
 public static class ServiceCollectionExtensions
 {
+    /// <summary>
+    /// Discovers closed FluentValidation validators in the supplied assembly and registers exact message routes.
+    /// </summary>
+    /// <remarks>
+    /// Only the supplied assembly is inspected. Concrete, closed validator types are ordered by fully qualified type
+    /// name for each message. Validators are added after any earlier explicit registrations; later explicit
+    /// registrations remain last. Abstract, interface, and open generic types are ignored.
+    /// </remarks>
+    /// <param name="services">The service collection to configure.</param>
+    /// <param name="assembly">The single consumer assembly to inspect.</param>
+    /// <returns>The same service collection for further configuration.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="services"/> or <paramref name="assembly"/> is null.</exception>
+    /// <exception cref="InvalidOperationException">
+    /// The assembly cannot be inspected, or a validator/message registration is duplicated.
+    /// </exception>
+    public static IServiceCollection AddSliceForgeValidatorsFromAssembly(
+        this IServiceCollection services,
+        Assembly assembly)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(assembly);
+
+        IReadOnlyList<DiscoveredValidatorRegistration> registrations =
+            ValidatorAssemblyScanner.Discover(assembly);
+        if (registrations.Count == 0)
+        {
+            return services;
+        }
+
+        ValidationRegistrationStore registrationStore = GetOrCreateRegistrationStore(services);
+        registrationStore.AddRange(registrations.Select(registration => registration.Route).ToArray());
+
+        foreach (Type validatorType in registrations
+                     .Select(registration => registration.ValidatorType)
+                     .Distinct())
+        {
+            services.TryAdd(ServiceDescriptor.Transient(validatorType, validatorType));
+        }
+
+        return services;
+    }
+
     /// <summary>
     /// Registers one validator for one exact concrete message type.
     /// </summary>

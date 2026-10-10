@@ -6,6 +6,8 @@ internal interface IValidationRoute
 {
     Type MessageType { get; }
 
+    IReadOnlyList<Type> ValidatorTypes { get; }
+
     IValidationRoute AddValidator(Type validatorType);
 
     Task<Error?> ValidateAsync(

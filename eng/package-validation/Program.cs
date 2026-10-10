@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
+using System.Reflection;
 using FluentValidation;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
@@ -59,8 +60,9 @@ meterListener.Start();
 
 ServiceCollection services = new();
 services.AddSliceForgeRuntime();
-services.AddSliceForgeHandlersFromAssembly(typeof(ValidatedCommand).Assembly);
-services.AddSliceForgeValidator<ValidatedCommand, ValidatedCommandValidator>();
+Assembly applicationAssembly = typeof(ValidatedCommand).Assembly;
+services.AddSliceForgeHandlersFromAssembly(applicationAssembly);
+services.AddSliceForgeValidatorsFromAssembly(applicationAssembly);
 services.AddSliceForgeValidation();
 services.AddSliceForgeObservability();
 
