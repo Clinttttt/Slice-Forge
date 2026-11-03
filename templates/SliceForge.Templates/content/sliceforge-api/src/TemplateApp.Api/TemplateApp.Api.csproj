@@ -7,9 +7,14 @@
   <ItemGroup>
     <PackageReference Include="SliceForge.Core" />
     <PackageReference Include="SliceForge.Runtime" />
+<!--#if (UseValidation) -->
     <PackageReference Include="SliceForge.Validation" />
+    <PackageReference Include="FluentValidation" />
+<!--#endif -->
     <PackageReference Include="SliceForge.AspNetCore" />
+<!--#if (UseObservability) -->
     <PackageReference Include="SliceForge.Observability" />
+<!--#endif -->
   </ItemGroup>
 
 </Project>

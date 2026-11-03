@@ -117,20 +117,23 @@ function Invoke-Tool {
 function Assert-GeneratedTemplateComposition {
     param(
         [string] $ApplicationRoot,
-        [string] $ApplicationName
+        [string] $ApplicationName,
+        [bool] $UseValidation = $true,
+        [bool] $UseObservability = $true
     )
 
     $apiRoot = Join-Path $ApplicationRoot "src/$ApplicationName.Api"
-    $programPath = Join-Path $apiRoot 'Program.cs'
-    $program = Get-Content -LiteralPath $programPath -Raw
-
+    $program = Get-Content -LiteralPath (Join-Path $apiRoot 'Program.cs') -Raw
     $registrationOrder = @(
         'AddSliceForgeRuntime()',
-        'AddSliceForgeHandlersFromAssembly(applicationAssembly)',
-        'AddSliceForgeValidatorsFromAssembly(applicationAssembly)',
-        'AddSliceForgeValidation()',
-        'AddSliceForgeObservability()'
+        'AddSliceForgeHandlersFromAssembly(applicationAssembly)'
     )
+    if ($UseValidation) {
+        $registrationOrder += 'AddSliceForgeValidatorsFromAssembly(applicationAssembly)'
+        $registrationOrder += 'AddSliceForgeValidation()'
+    }
+    if ($UseObservability) { $registrationOrder += 'AddSliceForgeObservability()' }
+
     $previousIndex = -1
     foreach ($registration in $registrationOrder) {
         $index = $program.IndexOf($registration, [System.StringComparison]::Ordinal)
@@ -138,18 +141,52 @@ function Assert-GeneratedTemplateComposition {
         $previousIndex = $index
     }
 
-    Assert-Condition ($program -match 'typeof\(ApplicationAssemblyMarker\)\.Assembly') "$ApplicationName must supply its application assembly through ApplicationAssemblyMarker."
-    Assert-Condition ($program -notmatch 'AddSliceForgeQueryHandler\s*<|AddSliceForgeCommandHandler\s*<|AddSliceForgeValidator\s*<') "$ApplicationName must use discovery instead of per-handler or per-validator registrations."
-    Assert-Condition ($program.IndexOf('GetExampleEndpoint.Map(app);', [System.StringComparison]::Ordinal) -ge 0) "$ApplicationName must map the GET endpoint explicitly."
-    Assert-Condition ($program.IndexOf('CreateGreetingEndpoint.Map(app);', [System.StringComparison]::Ordinal) -ge 0) "$ApplicationName must map the POST endpoint explicitly."
+    Assert-Condition ($program.Contains("typeof($ApplicationName.Api.ApplicationAssemblyMarker).Assembly")) "$ApplicationName must supply its application assembly through ApplicationAssemblyMarker."
+    Assert-Condition ($program -notmatch 'AddSliceForgeQueryHandler\s*<|AddSliceForgeCommandHandler\s*<|AddSliceForgeValidator\s*<') "$ApplicationName must use discovery instead of individual registrations."
+    Assert-Condition ($program.IndexOf('GetExampleEndpoint.Map(app);', [System.StringComparison]::Ordinal) -ge 0) "$ApplicationName must explicitly map GET."
+    Assert-Condition ($program.IndexOf('CreateGreetingEndpoint.Map(app);', [System.StringComparison]::Ordinal) -ge 0) "$ApplicationName must explicitly map POST."
+    Assert-Condition ($program -notmatch '#if\s*\(UseValidation\)|#if\s*\(UseObservability\)') "$ApplicationName Program.cs contains template conditionals."
 
-    $greetingEndpointPath = Join-Path $apiRoot 'Features/Examples/CreateGreeting/CreateGreetingEndpoint.cs'
-    $greetingEndpoint = Get-Content -LiteralPath $greetingEndpointPath -Raw
+    $validationCalls = $program -match 'AddSliceForgeValidatorsFromAssembly|AddSliceForgeValidation\('
+    $observabilityCalls = $program -match 'AddSliceForgeObservability\('
+    Assert-Condition ($validationCalls -eq $UseValidation) "$ApplicationName has incorrect Validation registration."
+    Assert-Condition ($observabilityCalls -eq $UseObservability) "$ApplicationName has incorrect Observability registration."
+    Assert-Condition (($program.Contains('using SliceForge.Validation.DependencyInjection;')) -eq $UseValidation) "$ApplicationName has incorrect Validation namespace imports."
+    Assert-Condition (($program.Contains('using SliceForge.Observability.DependencyInjection;')) -eq $UseObservability) "$ApplicationName has incorrect Observability namespace imports."
+
+    $validatorPath = Join-Path $apiRoot 'Features/Examples/CreateGreeting/CreateGreetingValidator.cs'
+    Assert-Condition ((Test-Path -LiteralPath $validatorPath -PathType Leaf) -eq $UseValidation) "$ApplicationName has incorrect optional validator file inclusion."
+
+    $greetingEndpoint = Get-Content -LiteralPath (Join-Path $apiRoot 'Features/Examples/CreateGreeting/CreateGreetingEndpoint.cs') -Raw
     Assert-Condition ($greetingEndpoint.IndexOf('"/examples/greetings"', [System.StringComparison]::Ordinal) -ge 0) "$ApplicationName is missing the greeting POST route."
-    Assert-Condition ($greetingEndpoint.IndexOf('SendCommandAsync<GreetingResponse>(command, cancellationToken)', [System.StringComparison]::Ordinal) -ge 0) "$ApplicationName greeting endpoint must pass the request cancellation token to IMessageSender."
-    Assert-Condition ($greetingEndpoint.IndexOf('ToHttpResult(response => HttpResults.Ok(response))', [System.StringComparison]::Ordinal) -ge 0) "$ApplicationName greeting endpoint must keep successful HTTP semantics at the endpoint."
-}
+    Assert-Condition ($greetingEndpoint.IndexOf('SendCommandAsync<GreetingResponse>(command, cancellationToken)', [System.StringComparison]::Ordinal) -ge 0) "$ApplicationName greeting endpoint must pass the cancellation token."
+    Assert-Condition ($greetingEndpoint.IndexOf('ToHttpResult(response => HttpResults.Ok(response))', [System.StringComparison]::Ordinal) -ge 0) "$ApplicationName greeting endpoint must own HTTP success semantics."
 
+    $apiProject = [xml](Get-Content -LiteralPath (Join-Path $apiRoot "$ApplicationName.Api.csproj") -Raw)
+    $actualPackages = @($apiProject.SelectNodes("//*[local-name()='PackageReference']") | ForEach-Object { $_.GetAttribute('Include') } | Sort-Object)
+    $expectedPackages = @('SliceForge.AspNetCore', 'SliceForge.Core', 'SliceForge.Runtime')
+    if ($UseValidation) { $expectedPackages += @('SliceForge.Validation', 'FluentValidation') }
+    if ($UseObservability) { $expectedPackages += 'SliceForge.Observability' }
+    $expectedPackages = @($expectedPackages | Sort-Object)
+    Assert-Condition (($actualPackages -join '|') -eq ($expectedPackages -join '|')) "$ApplicationName API package references do not match selected capabilities."
+
+    $centralVersions = [xml](Get-Content -LiteralPath (Join-Path $ApplicationRoot 'Directory.Packages.props') -Raw)
+    foreach ($packageId in @('SliceForge.Core', 'SliceForge.Runtime', 'SliceForge.AspNetCore', 'SliceForge.Validation', 'SliceForge.Observability', 'FluentValidation')) {
+        $node = $centralVersions.SelectSingleNode("//*[local-name()='PackageVersion' and @Include='$packageId']")
+        $shouldExist = $expectedPackages -contains $packageId
+        Assert-Condition (($null -ne $node) -eq $shouldExist) "$ApplicationName central package version for $packageId does not match selected capabilities."
+        if ($shouldExist) {
+            $expectedPackageVersion = if ($packageId -eq 'FluentValidation') { '12.1.1' } else { $expectedVersion }
+            Assert-Condition ($node.GetAttribute('Version') -eq $expectedPackageVersion) "$ApplicationName central package version for $packageId is not $expectedPackageVersion."
+        }
+    }
+
+    $testPath = Join-Path $ApplicationRoot "tests/$ApplicationName.Api.Tests/ExampleEndpointTests.cs"
+    $testContent = Get-Content -LiteralPath $testPath -Raw
+    Assert-Condition (($testContent.Contains('Post_greeting_returns_validation_problem_for_a_missing_name')) -eq $UseValidation) "$ApplicationName generated tests do not match Validation selection."
+    Assert-Condition (($testContent.Contains('Post_greeting_without_validation_does_not_enforce_name_rules')) -eq (-not $UseValidation)) "$ApplicationName generated tests do not prove disabled Validation behavior."
+    Assert-Condition ($testContent -notmatch '#if\s*\(UseValidation\)|#else|#endif') "$ApplicationName generated tests retain template conditional directives."
+}
 Assert-Condition (Test-Path -LiteralPath $packageRoot -PathType Container) "Package feed does not exist: $packageRoot. Run dotnet pack first."
 
 $archives = @(Get-ChildItem -LiteralPath $packageRoot -Filter 'SliceForge.*.nupkg' -File |
@@ -320,6 +357,10 @@ try {
     Assert-Condition ($manifest.shortName -eq 'sliceforge-api') 'The template shortName must be sliceforge-api.'
     Assert-Condition ($manifest.sourceName -eq 'TemplateApp') 'The template sourceName must be the neutral TemplateApp placeholder.'
     Assert-Condition ($manifest.preferNameDirectory -eq $true) 'The template must prefer a directory named after the requested application.'
+foreach ($symbolName in @('UseValidation', 'UseObservability')) {
+    $symbol = $manifest.symbols.$symbolName
+    Assert-Condition ($null -ne $symbol -and $symbol.type -eq 'parameter' -and $symbol.datatype -eq 'bool' -and $symbol.defaultValue -eq 'true') "Template capability '$symbolName' must be a default-on boolean parameter."
+}
     Assert-Condition (@($templateMetadata.SelectNodes("./*[local-name()='dependencies']//*[local-name()='dependency']")).Count -eq 0) 'SliceForge.Templates must not declare runtime package dependencies.'
 
     foreach ($entry in $templateArchive.Entries) {
@@ -438,13 +479,14 @@ Assert-GeneratedTemplateComposition $generatedAppRoot 'DispatchFlow'
 $generatedApiProject = Join-Path $generatedAppRoot 'src/DispatchFlow.Api/DispatchFlow.Api.csproj'
 $generatedApiXml = [xml](Get-Content -LiteralPath $generatedApiProject -Raw)
 $generatedApiPackageIds = @($generatedApiXml.SelectNodes("//*[local-name()='PackageReference']") | ForEach-Object { $_.GetAttribute('Include') } | Sort-Object)
-$expectedApiPackageIds = @('SliceForge.AspNetCore', 'SliceForge.Core', 'SliceForge.Observability', 'SliceForge.Runtime', 'SliceForge.Validation') | Sort-Object
-Assert-Condition (($generatedApiPackageIds -join '|') -eq ($expectedApiPackageIds -join '|')) 'Generated API project must directly reference exactly the five SliceForge packages.'
+$expectedApiPackageIds = @('FluentValidation', 'SliceForge.AspNetCore', 'SliceForge.Core', 'SliceForge.Observability', 'SliceForge.Runtime', 'SliceForge.Validation') | Sort-Object
+Assert-Condition (($generatedApiPackageIds -join '|') -eq ($expectedApiPackageIds -join '|')) 'Generated API project must reference the five SliceForge packages and FluentValidation.'
 
 $generatedPackageVersions = [xml](Get-Content -LiteralPath (Join-Path $generatedAppRoot 'Directory.Packages.props') -Raw)
 foreach ($packageId in $expectedApiPackageIds) {
     $packageVersion = $generatedPackageVersions.SelectSingleNode("//*[local-name()='PackageVersion' and @Include='$packageId']")
-    Assert-Condition ($null -ne $packageVersion -and $packageVersion.GetAttribute('Version') -eq $expectedVersion) "Generated package version for $packageId must be centrally pinned to $expectedVersion."
+    $requiredVersion = if ($packageId -eq 'FluentValidation') { '12.1.1' } else { $expectedVersion }
+    Assert-Condition ($null -ne $packageVersion -and $packageVersion.GetAttribute('Version') -eq $requiredVersion) "Generated package version for $packageId must be centrally pinned to $requiredVersion."
 }
 
 $generatedProjectFiles = @(Get-ChildItem -LiteralPath $generatedAppRoot -Recurse -Filter '*.csproj' -File)
@@ -515,6 +557,32 @@ Invoke-DotNet @('build', $generatedSolution, '--no-restore', '-c', 'Release', '-
 Write-Output 'Running generated DispatchFlow tests...'
 Invoke-DotNet @('test', $generatedSolution, '--no-build', '--no-restore', '-c', 'Release', '--verbosity', 'minimal')
 
+Write-Output 'Validating all direct-template Validation/Observability combinations...'
+$capabilityCases = @(
+    @{ Name = 'ValidationOnlyFlow'; UseValidation = $true; UseObservability = $false },
+    @{ Name = 'ObservabilityOnlyFlow'; UseValidation = $false; UseObservability = $true },
+    @{ Name = 'MinimalFlow'; UseValidation = $false; UseObservability = $false }
+)
+foreach ($capabilityCase in $capabilityCases) {
+    $name = $capabilityCase.Name
+    $caseRoot = Join-Path $generatedRoot $name
+    $validationFlag = $capabilityCase.UseValidation.ToString().ToLowerInvariant()
+    $observabilityFlag = $capabilityCase.UseObservability.ToString().ToLowerInvariant()
+
+    Invoke-DotNet @(
+        'new', 'sliceforge-api', '-n', $name, '--output', $caseRoot,
+        '--UseValidation', $validationFlag, '--UseObservability', $observabilityFlag,
+        '--no-update-check', '--debug:custom-hive', $templateHive
+    )
+
+    Assert-GeneratedTemplateComposition $caseRoot $name $capabilityCase.UseValidation $capabilityCase.UseObservability
+
+    $caseSolution = Join-Path $caseRoot "$name.slnx"
+    Invoke-DotNet @('restore', $caseSolution, '--configfile', $nugetConfig, '--packages', $packageCache, '--verbosity', 'minimal')
+    Invoke-DotNet @('format', $caseSolution, '--verify-no-changes', '--no-restore')
+    Invoke-DotNet @('build', $caseSolution, '--no-restore', '-c', 'Release', '--verbosity', 'minimal')
+    Invoke-DotNet @('test', $caseSolution, '--no-build', '--no-restore', '-c', 'Release', '--verbosity', 'minimal')
+}
 Write-Output 'Installing and validating the isolated SliceForge CLI tool...'
 Remove-GeneratedDirectory $cliValidationRoot $cliValidationRoot $validationRoot
 $cliHome = Join-Path $cliValidationRoot 'home'
@@ -610,12 +678,13 @@ try {
     $cliApiProject = Join-Path $cliGeneratedAppRoot 'src/CliDispatchFlow.Api/CliDispatchFlow.Api.csproj'
     [xml] $cliApiProjectXml = Get-Content -LiteralPath $cliApiProject -Raw
     $cliApiPackageIds = @($cliApiProjectXml.SelectNodes("//*[local-name()='PackageReference']") | ForEach-Object { $_.GetAttribute('Include') } | Sort-Object)
-    $expectedApiPackageIds = @('SliceForge.AspNetCore', 'SliceForge.Core', 'SliceForge.Observability', 'SliceForge.Runtime', 'SliceForge.Validation') | Sort-Object
-    Assert-Condition (($cliApiPackageIds -join '|') -eq ($expectedApiPackageIds -join '|')) 'CLI-generated API must use exactly the five package-only SliceForge references.'
+    $expectedApiPackageIds = @('FluentValidation', 'SliceForge.AspNetCore', 'SliceForge.Core', 'SliceForge.Observability', 'SliceForge.Runtime', 'SliceForge.Validation') | Sort-Object
+    Assert-Condition (($cliApiPackageIds -join '|') -eq ($expectedApiPackageIds -join '|')) 'CLI-generated API must reference the five SliceForge packages and FluentValidation.'
     $cliGeneratedVersions = [xml](Get-Content -LiteralPath (Join-Path $cliGeneratedAppRoot 'Directory.Packages.props') -Raw)
     foreach ($packageId in $expectedApiPackageIds) {
         $packageVersion = $cliGeneratedVersions.SelectSingleNode("//*[local-name()='PackageVersion' and @Include='$packageId']")
-        Assert-Condition ($null -ne $packageVersion -and $packageVersion.GetAttribute('Version') -eq $expectedVersion) "CLI-generated package version for $packageId is not $expectedVersion."
+        $requiredVersion = if ($packageId -eq 'FluentValidation') { '12.1.1' } else { $expectedVersion }
+        Assert-Condition ($null -ne $packageVersion -and $packageVersion.GetAttribute('Version') -eq $requiredVersion) "CLI-generated package version for $packageId is not $requiredVersion."
     }
     foreach ($projectFile in @(Get-ChildItem -LiteralPath $cliGeneratedAppRoot -Recurse -Filter '*.csproj' -File)) {
         [xml] $projectXml = Get-Content -LiteralPath $projectFile.FullName -Raw

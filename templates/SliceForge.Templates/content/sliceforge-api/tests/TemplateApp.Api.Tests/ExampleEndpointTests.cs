@@ -35,6 +35,7 @@ public sealed class ExampleEndpointTests
         Assert.Equal("Hello, Ada!", body.RootElement.GetProperty("message").GetString());
     }
 
+#if (UseValidation)
     [Theory]
     [InlineData("")]
     [InlineData("   ")]
@@ -76,4 +77,20 @@ public sealed class ExampleEndpointTests
             body.RootElement.GetProperty("errors").GetProperty("Name").EnumerateArray(),
             error => error.GetString() == expectedMessage);
     }
+#else
+    [Fact]
+    public async Task Post_greeting_without_validation_does_not_enforce_name_rules()
+    {
+        using WebApplicationFactory<Program> factory = new();
+        using HttpClient client = factory.CreateClient();
+
+        using HttpResponseMessage response = await client.PostAsJsonAsync(
+            "/examples/greetings",
+            new { name = string.Empty });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        using JsonDocument body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.Equal("Hello, !", body.RootElement.GetProperty("message").GetString());
+    }
+#endif
 }

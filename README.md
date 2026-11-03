@@ -88,8 +88,9 @@ an OpenTelemetry dependency. Consumers own `service.name`, sampling, exporters,
 and telemetry backends.
 
 The packages are licensed under Apache-2.0. The CLI and template are preview
-tools; expanded diagnostics remain future work. The template generates an
-application that consumes the five runtime libraries above as NuGet packages.
+tools; expanded diagnostics remain future work. The development template
+includes Core, Runtime, and AspNetCore by default, with optional Validation and
+Observability package references selected at generation time.
 
 ## Install the CLI (preview)
 
@@ -117,14 +118,33 @@ dotnet new install SliceForge.Templates@0.1.0-preview.3
 dotnet new sliceforge-api -n DispatchFlow
 ```
 
+**Development template options (not yet published):** `UseValidation` and
+`UseObservability` are independent boolean options, each enabled by default.
+For a minimal API without either optional capability:
+
+```powershell
+dotnet new sliceforge-api -n DispatchFlow --UseValidation false --UseObservability false
+```
+
+Each `false` removes its package reference and central package pin, namespace
+import, and DI registration; disabling Validation also removes its direct
+FluentValidation dependency, generated validator source, and switches the
+generated HTTP test to demonstrate that no automatic name validation occurs.
+The always-on baseline is Core, Runtime, and AspNetCore. Enabling Validation adds pre-handler input rules; disabling it
+does **not** provide alternative request validation or change domain invariants.
+Observability remains optional and does not automatically configure a telemetry
+exporter. All four combinations are exercised by isolated generated-app tests.
+
 The direct template workflow remains available without the CLI. The generated
 solution and projects use `DispatchFlow` as their identity and include a small,
-removable GET query slice and a validated greeting command slice. An
-application-owned assembly marker enables startup-only handler and validator
-discovery; endpoints remain mapped explicitly. The API project references the
-five SliceForge libraries through NuGet, not repository projects, and has no
-CLI dependency. The updated template source is unreleased until the coordinated
-packages contain the discovery APIs described above.
+removable GET query slice and a greeting command slice. An application-owned
+assembly marker enables startup-only handler discovery and, when selected,
+validator discovery; endpoints remain mapped explicitly. Package references
+point to NuGet, not repository projects, and the generated API has no CLI
+dependency. The current `sliceforge new` CLI still generates the default
+configuration; interactive questions and capability flags belong to a later
+milestone. The updated template source and its option switches are unreleased
+until the coordinated packages contain the discovery APIs described above.
 
 ## Build and test
 

@@ -6,9 +6,14 @@
   <ItemGroup>
     <PackageVersion Include="SliceForge.Core" Version="0.1.0-preview.3" />
     <PackageVersion Include="SliceForge.Runtime" Version="0.1.0-preview.3" />
+<!--#if (UseValidation) -->
     <PackageVersion Include="SliceForge.Validation" Version="0.1.0-preview.3" />
+    <PackageVersion Include="FluentValidation" Version="12.1.1" />
+<!--#endif -->
     <PackageVersion Include="SliceForge.AspNetCore" Version="0.1.0-preview.3" />
+<!--#if (UseObservability) -->
     <PackageVersion Include="SliceForge.Observability" Version="0.1.0-preview.3" />
+<!--#endif -->
     <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.12" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageVersion Include="xunit" Version="2.9.3" />

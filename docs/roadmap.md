@@ -17,8 +17,10 @@ The implementation is intentionally incremental:
 13. Milestone 11A: opt-in Runtime handler assembly discovery — completed
 14. Milestone 11B: opt-in Validation validator assembly discovery — completed
 15. Milestone 12: template integration with handler/validator discovery — completed
-16. Diagnostics — planned
-17. Real-world adoption
+16. Milestone 13A: optional Validation and Observability template options — completed
+17. Milestone 13B: CLI capability selection and equivalent flags — planned
+18. Diagnostics — planned
+19. Real-world adoption
 
 Milestone 5 adds Core-only Result-to-HTTP mapping in `SliceForge.AspNetCore`.
 Consumers own successful response semantics, explicit endpoint mapping,
@@ -90,3 +92,14 @@ are exercised. Because the currently published `0.1.0-preview.3` libraries do
 not contain the discovery APIs, validation maps `SliceForge.*` package IDs to
 fresh local packages; this template update is unreleased until a coordinated
 package release includes those APIs.
+
+Milestone 13A adds independent, default-on `UseValidation` and
+`UseObservability` boolean parameters to the direct `sliceforge-api`
+template. Disabled capabilities leave no package reference, central version
+pin, or composition call; disabling Validation also omits its direct
+FluentValidation dependency and the sample validator, and adjusts the
+generated HTTP test expectations. The Core + Runtime +
+AspNetCore Minimal API baseline and explicit endpoint mapping remain unchanged.
+Package validation generates all four combinations, restores/builds/tests each
+from freshly packed local packages, and preserves the CLI's default experience.
+Interactive capability prompts and CLI forwarding remain Milestone 13B work.

@@ -5,6 +5,32 @@
   "shortName": "sliceforge-api",
   "sourceName": "TemplateApp",
   "preferNameDirectory": true,
+  "symbols": {
+    "UseValidation": {
+      "type": "parameter",
+      "datatype": "bool",
+      "description": "Include SliceForge.Validation, FluentValidation rules, and validation integration.",
+      "defaultValue": "true"
+    },
+    "UseObservability": {
+      "type": "parameter",
+      "datatype": "bool",
+      "description": "Include SliceForge.Observability message tracing, metrics, and logging.",
+      "defaultValue": "true"
+    }
+  },
+  "sources": [
+    {
+      "modifiers": [
+        {
+          "condition": "!UseValidation",
+          "exclude": [
+            "src/TemplateApp.Api/Features/Examples/CreateGreeting/CreateGreetingValidator.cs"
+          ]
+        }
+      ]
+    }
+  ],
   "tags": {
     "language": "C#",
     "type": "project"

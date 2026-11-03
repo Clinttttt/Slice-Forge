@@ -2229,6 +2229,7 @@ Completed milestones:
 - Milestone 11A: opt-in Runtime handler assembly discovery
 - Milestone 11B: opt-in Validation validator assembly discovery
 - Milestone 12: template integration with handler and validator discovery
+- Milestone 13A: independent Validation and Observability template capability options
 
 Runtime is separate from Core and uses exact concrete-message routing. It
 supports explicit handler registration and optional startup-only discovery
@@ -2274,9 +2275,13 @@ repeats those checks without publishing. Milestones 9 and 10 are complete as
 preview packages. Milestones 11A and 11B add independent opt-in startup
 discovery for handlers and validators without changing exact message routing
 or validation execution. Milestone 12 integrates both APIs into the template
-and adds a validated greeting command without changing the template's package
-set or discovering endpoints. Its source remains unreleased until a
-coordinated package version includes the discovery APIs. Endpoint discovery
-remains deferred. Diagnostics remains planned. Keep the CLI independent from
-runtime libraries and keep generated architecture owned by the directly
-usable template.
+and adds a validated greeting command without discovering endpoints.
+Milestone 13A then makes Validation and Observability independently optional
+at `dotnet new` generation time using default-on boolean parameters.
+Unselected capabilities leave no package reference, version pin, DI call, or
+unused sample validator; isolated validation exercises all four combinations.
+The CLI still generates the default baseline and does not yet expose capability
+questions or flags. Its source remains unreleased until a coordinated package
+version includes the discovery APIs. Endpoint discovery remains deferred.
+Diagnostics remains planned. Keep the CLI independent from runtime libraries
+and keep generated architecture owned by the directly usable template.

@@ -81,15 +81,26 @@ source-project references. Validation does not publish packages.
 `SliceForge.Templates` is a separate content-only NuGet template package at the
 same preview version. It has no dependency on SliceForge libraries and embeds
 no compiled assemblies. `dotnet new sliceforge-api -n DispatchFlow` generates
-a consumer whose API project references the five libraries through NuGet,
-whose versions are centrally managed in the generated application, and which
-contains a GET query slice plus a validated greeting command slice. An
-application-owned marker opts into startup-only handler and validator
-discovery; endpoints remain explicitly mapped. Isolated package validation
-source-maps `SliceForge.*` packages to freshly packed local artifacts so the
-development template is not tested against the older published `preview.3`
-binaries. This template update remains unreleased until the coordinated
-packages include the discovery APIs.
+a consumer with Core, Runtime, and AspNetCore NuGet references. The development
+template has independent, default-on `UseValidation` and `UseObservability`
+boolean parameters. Disabling a capability removes its API package reference,
+central version pin, and composition-root calls; Validation additionally
+includes a direct FluentValidation package reference for the generated
+validator and omits both it and the validator source when disabled.
+Disabling Validation does not add an alternative validation mechanism.
+Both options can be disabled together without changing the Vertical Slice
+project layout, explicit endpoint mapping, or the GET/query and POST/command
+examples. With both enabled the generated application retains the five
+SliceForge package references plus explicit FluentValidation, and pre-handler
+validation.
+
+The application-owned marker opts into startup-only handler discovery and,
+when Validation is selected, validator discovery. The CLI still uses the
+default template settings and does not yet expose capability flags. Isolated
+package validation covers all four direct-template capability combinations
+and default CLI generation using freshly packed local SliceForge packages.
+This template update remains unreleased until the coordinated packages include
+the discovery APIs, which are absent from published `preview.3` binaries.
 
 `SliceForge.Tool` is the NuGet package for the `SliceForge.Cli` .NET global-tool implementation and owns only command-line UX and
 orchestration. It delegates project generation to the installed
