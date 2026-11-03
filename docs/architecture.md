@@ -82,10 +82,14 @@ source-project references. Validation does not publish packages.
 same preview version. It has no dependency on SliceForge libraries and embeds
 no compiled assemblies. `dotnet new sliceforge-api -n DispatchFlow` generates
 a consumer whose API project references the five libraries through NuGet,
-whose versions are centrally managed in the generated application, and whose
-single example feature demonstrates explicit endpoint-to-handler dispatch.
-The template is validated by isolated installation, generation, package-feed
-restore, build, and HTTP integration test.
+whose versions are centrally managed in the generated application, and which
+contains a GET query slice plus a validated greeting command slice. An
+application-owned marker opts into startup-only handler and validator
+discovery; endpoints remain explicitly mapped. Isolated package validation
+source-maps `SliceForge.*` packages to freshly packed local artifacts so the
+development template is not tested against the older published `preview.3`
+binaries. This template update remains unreleased until the coordinated
+packages include the discovery APIs.
 
 `SliceForge.Tool` is the NuGet package for the `SliceForge.Cli` .NET global-tool implementation and owns only command-line UX and
 orchestration. It delegates project generation to the installed

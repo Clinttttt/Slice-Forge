@@ -114,6 +114,42 @@ function Invoke-Tool {
     }
 }
 
+function Assert-GeneratedTemplateComposition {
+    param(
+        [string] $ApplicationRoot,
+        [string] $ApplicationName
+    )
+
+    $apiRoot = Join-Path $ApplicationRoot "src/$ApplicationName.Api"
+    $programPath = Join-Path $apiRoot 'Program.cs'
+    $program = Get-Content -LiteralPath $programPath -Raw
+
+    $registrationOrder = @(
+        'AddSliceForgeRuntime()',
+        'AddSliceForgeHandlersFromAssembly(applicationAssembly)',
+        'AddSliceForgeValidatorsFromAssembly(applicationAssembly)',
+        'AddSliceForgeValidation()',
+        'AddSliceForgeObservability()'
+    )
+    $previousIndex = -1
+    foreach ($registration in $registrationOrder) {
+        $index = $program.IndexOf($registration, [System.StringComparison]::Ordinal)
+        Assert-Condition ($index -gt $previousIndex) "$ApplicationName Program.cs has missing or incorrectly ordered registration '$registration'."
+        $previousIndex = $index
+    }
+
+    Assert-Condition ($program -match 'typeof\(ApplicationAssemblyMarker\)\.Assembly') "$ApplicationName must supply its application assembly through ApplicationAssemblyMarker."
+    Assert-Condition ($program -notmatch 'AddSliceForgeQueryHandler\s*<|AddSliceForgeCommandHandler\s*<|AddSliceForgeValidator\s*<') "$ApplicationName must use discovery instead of per-handler or per-validator registrations."
+    Assert-Condition ($program.IndexOf('GetExampleEndpoint.Map(app);', [System.StringComparison]::Ordinal) -ge 0) "$ApplicationName must map the GET endpoint explicitly."
+    Assert-Condition ($program.IndexOf('CreateGreetingEndpoint.Map(app);', [System.StringComparison]::Ordinal) -ge 0) "$ApplicationName must map the POST endpoint explicitly."
+
+    $greetingEndpointPath = Join-Path $apiRoot 'Features/Examples/CreateGreeting/CreateGreetingEndpoint.cs'
+    $greetingEndpoint = Get-Content -LiteralPath $greetingEndpointPath -Raw
+    Assert-Condition ($greetingEndpoint.IndexOf('"/examples/greetings"', [System.StringComparison]::Ordinal) -ge 0) "$ApplicationName is missing the greeting POST route."
+    Assert-Condition ($greetingEndpoint.IndexOf('SendCommandAsync<GreetingResponse>(command, cancellationToken)', [System.StringComparison]::Ordinal) -ge 0) "$ApplicationName greeting endpoint must pass the request cancellation token to IMessageSender."
+    Assert-Condition ($greetingEndpoint.IndexOf('ToHttpResult(response => HttpResults.Ok(response))', [System.StringComparison]::Ordinal) -ge 0) "$ApplicationName greeting endpoint must keep successful HTTP semantics at the endpoint."
+}
+
 Assert-Condition (Test-Path -LiteralPath $packageRoot -PathType Container) "Package feed does not exist: $packageRoot. Run dotnet pack first."
 
 $archives = @(Get-ChildItem -LiteralPath $packageRoot -Filter 'SliceForge.*.nupkg' -File |
@@ -256,11 +292,16 @@ try {
         'content/sliceforge-api/Directory.Build.props',
         'content/sliceforge-api/Directory.Packages.props',
         'content/sliceforge-api/TemplateApp.slnx',
+        'content/sliceforge-api/src/TemplateApp.Api/ApplicationAssemblyMarker.cs',
         'content/sliceforge-api/src/TemplateApp.Api/TemplateApp.Api.csproj',
         'content/sliceforge-api/src/TemplateApp.Api/Program.cs',
         'content/sliceforge-api/src/TemplateApp.Api/Features/Examples/GetExample/GetExampleQuery.cs',
         'content/sliceforge-api/src/TemplateApp.Api/Features/Examples/GetExample/GetExampleHandler.cs',
         'content/sliceforge-api/src/TemplateApp.Api/Features/Examples/GetExample/GetExampleEndpoint.cs',
+        'content/sliceforge-api/src/TemplateApp.Api/Features/Examples/CreateGreeting/CreateGreetingCommand.cs',
+        'content/sliceforge-api/src/TemplateApp.Api/Features/Examples/CreateGreeting/CreateGreetingValidator.cs',
+        'content/sliceforge-api/src/TemplateApp.Api/Features/Examples/CreateGreeting/CreateGreetingHandler.cs',
+        'content/sliceforge-api/src/TemplateApp.Api/Features/Examples/CreateGreeting/CreateGreetingEndpoint.cs',
         'content/sliceforge-api/tests/TemplateApp.Api.Tests/TemplateApp.Api.Tests.csproj',
         'content/sliceforge-api/tests/TemplateApp.Api.Tests/ExampleEndpointTests.cs'
     )
@@ -363,11 +404,16 @@ $expectedGeneratedFiles = @(
     'Directory.Build.props',
     'Directory.Packages.props',
     'DispatchFlow.slnx',
+    'src/DispatchFlow.Api/ApplicationAssemblyMarker.cs',
     'src/DispatchFlow.Api/DispatchFlow.Api.csproj',
     'src/DispatchFlow.Api/Program.cs',
     'src/DispatchFlow.Api/Features/Examples/GetExample/GetExampleQuery.cs',
     'src/DispatchFlow.Api/Features/Examples/GetExample/GetExampleHandler.cs',
     'src/DispatchFlow.Api/Features/Examples/GetExample/GetExampleEndpoint.cs',
+    'src/DispatchFlow.Api/Features/Examples/CreateGreeting/CreateGreetingCommand.cs',
+    'src/DispatchFlow.Api/Features/Examples/CreateGreeting/CreateGreetingValidator.cs',
+    'src/DispatchFlow.Api/Features/Examples/CreateGreeting/CreateGreetingHandler.cs',
+    'src/DispatchFlow.Api/Features/Examples/CreateGreeting/CreateGreetingEndpoint.cs',
     'tests/DispatchFlow.Api.Tests/DispatchFlow.Api.Tests.csproj',
     'tests/DispatchFlow.Api.Tests/ExampleEndpointTests.cs'
 )
@@ -387,6 +433,7 @@ foreach ($file in $generatedTextFiles) {
 $generatedNamespaces = @($generatedTextFiles | Where-Object { $_.Extension -eq '.cs' } | ForEach-Object { Get-Content -LiteralPath $_.FullName -Raw }) -join "`n"
 Assert-Condition ($generatedNamespaces -match 'namespace DispatchFlow\.Api\.') 'Generated API namespaces do not use the DispatchFlow identity.'
 Assert-Condition ($generatedNamespaces -match 'namespace DispatchFlow\.Api\.Tests') 'Generated test namespaces do not use the DispatchFlow identity.'
+Assert-GeneratedTemplateComposition $generatedAppRoot 'DispatchFlow'
 
 $generatedApiProject = Join-Path $generatedAppRoot 'src/DispatchFlow.Api/DispatchFlow.Api.csproj'
 $generatedApiXml = [xml](Get-Content -LiteralPath $generatedApiProject -Raw)
@@ -441,6 +488,15 @@ $propsPath = Join-Path $consumerRoot 'Directory.Build.props'
 $targetsPath = Join-Path $consumerRoot 'Directory.Build.targets'
 $packagesPropsPath = Join-Path $consumerRoot 'Directory.Packages.props'
 Assert-Condition ((Test-Path $nugetConfig) -and (Test-Path $propsPath) -and (Test-Path $targetsPath) -and (Test-Path $packagesPropsPath)) 'Isolated consumer configuration files were not materialized.'
+$nugetConfigXml = [xml](Get-Content -LiteralPath $nugetConfig -Raw)
+$localFeedSource = $nugetConfigXml.SelectSingleNode("//*[local-name()='packageSources']/*[local-name()='add' and @key='SliceForge local feed']")
+Assert-Condition ($null -ne $localFeedSource) 'The isolated NuGet configuration must define the local SliceForge package feed.'
+$resolvedLocalFeed = [System.IO.Path]::GetFullPath([System.IO.Path]::Combine($consumerRoot, $localFeedSource.GetAttribute('value')))
+Assert-Condition ($resolvedLocalFeed -eq [System.IO.Path]::GetFullPath($packageRoot)) 'The isolated NuGet configuration local feed must resolve to artifacts/packages.'
+$localFeedPatterns = @($nugetConfigXml.SelectNodes("//*[local-name()='packageSourceMapping']/*[local-name()='packageSource' and @key='SliceForge local feed']/*[local-name()='package']") | ForEach-Object { $_.GetAttribute('pattern') })
+Assert-Condition ($localFeedPatterns.Count -eq 1 -and $localFeedPatterns[0] -eq 'SliceForge.*') 'SliceForge packages must resolve only from the freshly packed local feed.'
+$nugetOrgPatterns = @($nugetConfigXml.SelectNodes("//*[local-name()='packageSourceMapping']/*[local-name()='packageSource' and @key='nuget.org']/*[local-name()='package']") | ForEach-Object { $_.GetAttribute('pattern') })
+Assert-Condition ($nugetOrgPatterns -contains '*') 'nuget.org must remain available for third-party package dependencies.'
 
 Write-Output 'Restoring the package-only consumer with its isolated NuGet configuration and cache...'
 Invoke-DotNet @('restore', $consumerProject, '--configfile', $nugetConfig, '--packages', $packageCache, '--verbosity', 'minimal')
@@ -522,8 +578,16 @@ try {
         'Directory.Build.props',
         'Directory.Packages.props',
         'CliDispatchFlow.slnx',
+        'src/CliDispatchFlow.Api/ApplicationAssemblyMarker.cs',
         'src/CliDispatchFlow.Api/CliDispatchFlow.Api.csproj',
         'src/CliDispatchFlow.Api/Program.cs',
+        'src/CliDispatchFlow.Api/Features/Examples/GetExample/GetExampleQuery.cs',
+        'src/CliDispatchFlow.Api/Features/Examples/GetExample/GetExampleHandler.cs',
+        'src/CliDispatchFlow.Api/Features/Examples/GetExample/GetExampleEndpoint.cs',
+        'src/CliDispatchFlow.Api/Features/Examples/CreateGreeting/CreateGreetingCommand.cs',
+        'src/CliDispatchFlow.Api/Features/Examples/CreateGreeting/CreateGreetingValidator.cs',
+        'src/CliDispatchFlow.Api/Features/Examples/CreateGreeting/CreateGreetingHandler.cs',
+        'src/CliDispatchFlow.Api/Features/Examples/CreateGreeting/CreateGreetingEndpoint.cs',
         'tests/CliDispatchFlow.Api.Tests/CliDispatchFlow.Api.Tests.csproj',
         'tests/CliDispatchFlow.Api.Tests/ExampleEndpointTests.cs'
     )
@@ -541,6 +605,7 @@ try {
     $cliGeneratedSource = @($cliGeneratedFiles | Where-Object { $_.Extension -eq '.cs' } | ForEach-Object { Get-Content -LiteralPath $_.FullName -Raw }) -join "`n"
     Assert-Condition ($cliGeneratedSource -match 'namespace CliDispatchFlow\.Api\.') 'CLI-generated API namespaces do not use the requested application identity.'
     Assert-Condition ($cliGeneratedSource -match 'namespace CliDispatchFlow\.Api\.Tests') 'CLI-generated test namespaces do not use the requested application identity.'
+    Assert-GeneratedTemplateComposition $cliGeneratedAppRoot 'CliDispatchFlow'
 
     $cliApiProject = Join-Path $cliGeneratedAppRoot 'src/CliDispatchFlow.Api/CliDispatchFlow.Api.csproj'
     [xml] $cliApiProjectXml = Get-Content -LiteralPath $cliApiProject -Raw

@@ -1784,7 +1784,7 @@ rewriting; do not silently change pack output.
 
 ---
 
-# 11. Milestone 9 — `dotnet new` Template (completed as a preview)
+# 11. Milestone 9 — `dotnet new` Template (package complete; integration modernized in Milestone 12)
 
 The content-only NuGet package is `SliceForge.Templates` at the synchronized
 `0.1.0-preview.3` version. It targets the .NET 10 template ecosystem, declares
@@ -1810,16 +1810,26 @@ DispatchFlow/
 └── tests/DispatchFlow.Api.Tests/
 ```
 
-The generated API project uses package references to the five released
-SliceForge libraries. Their synchronized versions and test-only dependencies
-are centrally managed in the generated `Directory.Packages.props`. It includes
-one small, removable `Features/Examples/GetExample` slice. The endpoint is
-mapped explicitly and shows the consumer-owned flow from `IMessageSender`
-through `Result<T>` to `ToHttpResult`; no scanning, reflection, database,
-repository layer, or generated Todos domain is included. Runtime, Validation,
-and Observability are registered explicitly in that order of composition
-(Runtime first; Validation before the outer Observability decorator), and the
+The generated API project uses package references to the five SliceForge
+libraries. Their synchronized versions and test-only dependencies are
+centrally managed in the generated `Directory.Packages.props`. It contains a
+small, removable `Features/Examples/GetExample` query slice and a validated
+`Features/Examples/CreateGreeting` command slice. `ApplicationAssemblyMarker`
+identifies the application assembly for opt-in startup handler and validator
+discovery. Endpoints remain explicitly mapped and own successful HTTP
+semantics; expected validation failures flow through `Result<T>` and
+`ToHttpResult` as HTTP 400. The template adds no database, repository layer,
+or generated Todos domain. Runtime is registered before discovery and
+decorators; Validation precedes the outer Observability decorator. The
 application configures `AddProblemDetails()` and `UseExceptionHandler()`.
+
+The repository's current published `0.1.0-preview.3` libraries predate the
+handler and validator discovery APIs used by this updated template source.
+Package versions remain unchanged in this milestone. Local validation packs
+all SliceForge packages from the current source and uses NuGet package-source
+mapping to ensure every `SliceForge.*` dependency comes from that local feed;
+the updated template must not be released until the coordinated packages
+include these APIs.
 
 Package validation inspects the template manifest/content and rejects compiled
 SliceForge assemblies. It installs the local package with an isolated
@@ -1828,6 +1838,23 @@ absence of repository project references, then restores from the local package
 feed plus nuget.org, builds, and runs the generated HTTP integration test. CI
 runs this flow on Ubuntu without modifying a developer's global template hive
 or publishing the package.
+
+### Milestone 12: Vertical Slice template integration
+
+The current template source demonstrates the opt-in handler and validator
+discovery APIs using an application-owned `ApplicationAssemblyMarker`. It
+contains two small slices: the existing GET query and a validated greeting
+command. Handler and validator discovery are startup-only; both endpoints are
+still mapped explicitly. HTTP tests verify successful dispatch and the
+`Validation.Failed` HTTP 400 contract. Package validation checks both direct
+template and CLI generation against locally packed SliceForge packages.
+
+The source continues to use the coordinated `0.1.0-preview.3` package pins in
+this milestone, but those already-published binaries predate handler and
+validator discovery. The updated template remains an unreleased development
+state until those APIs ship in a coordinated package release. NuGet source
+mapping ensures local validation cannot silently select older public
+SliceForge packages with the same version.
 
 ---
 
@@ -1878,7 +1905,7 @@ checks and never publishes packages.
 
 ---
 
-# 13. Milestone 11 — SliceForge Doctor / Diagnostics
+# 13. Milestone 13 — SliceForge Doctor / Diagnostics
 
 This is a later differentiating feature.
 
@@ -1911,7 +1938,7 @@ Do not build this before the basic package and template are stable.
 
 ---
 
-# 14. Milestone 12 — Real-World Adoption
+# 14. Milestone 14 — Real-World Adoption
 
 Use a real project such as DispatchFlow as a consumer.
 
@@ -2201,6 +2228,7 @@ Completed milestones:
 - Milestone 10: `SliceForge.Tool` preview global-tool package (implemented by `SliceForge.Cli`) and isolated tool/template validation
 - Milestone 11A: opt-in Runtime handler assembly discovery
 - Milestone 11B: opt-in Validation validator assembly discovery
+- Milestone 12: template integration with handler and validator discovery
 
 Runtime is separate from Core and uses exact concrete-message routing. It
 supports explicit handler registration and optional startup-only discovery
@@ -2245,6 +2273,10 @@ and builds/tests applications generated both directly and through the CLI. CI
 repeats those checks without publishing. Milestones 9 and 10 are complete as
 preview packages. Milestones 11A and 11B add independent opt-in startup
 discovery for handlers and validators without changing exact message routing
-or validation execution. Endpoint discovery remains deferred. Diagnostics
-remains planned. Keep the CLI independent from runtime libraries and keep
-generated architecture owned by the directly usable template.
+or validation execution. Milestone 12 integrates both APIs into the template
+and adds a validated greeting command without changing the template's package
+set or discovering endpoints. Its source remains unreleased until a
+coordinated package version includes the discovery APIs. Endpoint discovery
+remains deferred. Diagnostics remains planned. Keep the CLI independent from
+runtime libraries and keep generated architecture owned by the directly
+usable template.

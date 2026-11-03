@@ -16,8 +16,9 @@ The implementation is intentionally incremental:
 12. `SliceForge.Cli` global tool — completed as a preview package
 13. Milestone 11A: opt-in Runtime handler assembly discovery — completed
 14. Milestone 11B: opt-in Validation validator assembly discovery — completed
-15. Diagnostics — planned
-16. Real-world adoption
+15. Milestone 12: template integration with handler/validator discovery — completed
+16. Diagnostics — planned
+17. Real-world adoption
 
 Milestone 5 adds Core-only Result-to-HTTP mapping in `SliceForge.AspNetCore`.
 Consumers own successful response semantics, explicit endpoint mapping,
@@ -80,3 +81,12 @@ route catalog; validators stay transient and resolve dependencies from the
 current scope. It does not alter Runtime handler discovery or endpoint mapping.
 Neither scanner is claimed to be trimming- or Native-AOT-safe; manual
 registration is the predictable option for those consumers.
+
+Milestone 12 updates the generated application to use one application-owned
+assembly marker for both opt-in discovery APIs. It retains explicit endpoint
+mapping, the GET query example, and adds a validated greeting command whose
+validation Result maps to HTTP 400. Both direct `dotnet new` and CLI generation
+are exercised. Because the currently published `0.1.0-preview.3` libraries do
+not contain the discovery APIs, validation maps `SliceForge.*` package IDs to
+fresh local packages; this template update is unreleased until a coordinated
+package release includes those APIs.

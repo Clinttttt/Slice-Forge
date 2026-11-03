@@ -7,6 +7,14 @@ tooling without requiring MediatR. The `0.1.0-preview.3` packages target .NET
 10 as a coordinated preview set; APIs and package boundaries may still evolve
 before a stable release.
 
+**Template development compatibility:** the template source in this checkout
+now uses handler and validator discovery APIs that are not present in the
+already-published `0.1.0-preview.3` library binaries. Its coordinated package
+pins remain unchanged during development. Local package validation rebuilds
+the SliceForge packages and maps all `SliceForge.*` IDs to that local feed;
+this template update must ship only with a coordinated release containing the
+discovery APIs.
+
 ## Packages
 
 | Package | Responsibility |
@@ -110,11 +118,13 @@ dotnet new sliceforge-api -n DispatchFlow
 ```
 
 The direct template workflow remains available without the CLI. The generated
-solution and projects use `DispatchFlow` as their identity and
-include one small, removable example vertical slice. The template maps its
-Minimal API endpoint explicitly and composes the five published SliceForge
-library packages; it does not add repository project references or a CLI
-dependency.
+solution and projects use `DispatchFlow` as their identity and include a small,
+removable GET query slice and a validated greeting command slice. An
+application-owned assembly marker enables startup-only handler and validator
+discovery; endpoints remain mapped explicitly. The API project references the
+five SliceForge libraries through NuGet, not repository projects, and has no
+CLI dependency. The updated template source is unreleased until the coordinated
+packages contain the discovery APIs described above.
 
 ## Build and test
 
