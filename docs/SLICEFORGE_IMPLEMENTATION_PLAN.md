@@ -1746,8 +1746,9 @@ This audit is complete without production configuration API.
 
 # 10. Milestone 8 — Package Validation (completed and published as preview packages)
 
-The five public runtime packages target `net10.0` and share the current coordinated preview version
-`0.1.0-preview.3`: `SliceForge.Core`, `SliceForge.Runtime`,
+The five public runtime packages target `net10.0`. The public baseline is
+`0.1.0-preview.3`; the current coordinated source candidate is
+`0.1.0-preview.4`: `SliceForge.Core`, `SliceForge.Runtime`,
 `SliceForge.Validation`, `SliceForge.AspNetCore`, and
 `SliceForge.Observability`. Shared package metadata is centralized; package
 identity, description, and tags remain in each packable project. The packages
@@ -1787,14 +1788,15 @@ rewriting; do not silently change pack output.
 # 11. Milestone 9 — `dotnet new` Template (package complete; integration modernized in Milestone 12)
 
 The content-only NuGet package is `SliceForge.Templates` at the synchronized
-`0.1.0-preview.3` version. It targets the .NET 10 template ecosystem, declares
+`0.1.0-preview.4` candidate version. The published template remains at
+`preview.3` until the coordinated release. It targets the .NET 10 ecosystem, declares
 `PackageType=Template`, and contains no SliceForge runtime dependency or
 compiled assemblies.
 
-Scriptable use:
+After the coordinated candidate is publicly released, scriptable use is:
 
 ```powershell
-dotnet new install SliceForge.Templates@0.1.0-preview.3
+dotnet new install SliceForge.Templates@0.1.0-preview.4
 dotnet new sliceforge-api -n DispatchFlow
 ```
 
@@ -1849,12 +1851,10 @@ still mapped explicitly. HTTP tests verify successful dispatch and the
 `Validation.Failed` HTTP 400 contract. Package validation checks both direct
 template and CLI generation against locally packed SliceForge packages.
 
-The source continues to use the coordinated `0.1.0-preview.3` package pins in
-this milestone, but those already-published binaries predate handler and
-validator discovery. The updated template remains an unreleased development
-state until those APIs ship in a coordinated package release. NuGet source
-mapping ensures local validation cannot silently select older public
-SliceForge packages with the same version.
+At the time of Milestone 12, the source still used coordinated `preview.3`
+pins even though the published binaries predated handler and validator
+discovery. Milestone 15 migrates the local candidate pins to `preview.4`;
+NuGet source mapping ensures validation uses those freshly packed packages.
 
 ---
 
@@ -1866,8 +1866,9 @@ generated application architecture; the CLI delegates to `dotnet new` rather
 than generating files itself. The directly scriptable template workflow remains
 available without the CLI.
 
-Package identity is `SliceForge.Tool`, title `SliceForge CLI`; the implementation project and assembly remain `SliceForge.Cli`. The synchronized
-version is `0.1.0-preview.3`, target `net10.0`, and tool command `sliceforge`.
+Package identity is `SliceForge.Tool`, title `SliceForge CLI`; the implementation project and assembly remain `SliceForge.Cli`. The local candidate
+version is `0.1.0-preview.4` (the public baseline remains `preview.3`), target
+`net10.0`, and tool command `sliceforge`.
 `System.CommandLine` 2.0.12 is centrally versioned. The tool has no dependency
 on SliceForge runtime packages.
 
@@ -1920,16 +1921,17 @@ executes root/help/version/doctor/new. CLI-driven generation is restored from
 the local package feed and nuget.org, then built and tested. CI repeats these
 checks and never publishes packages.
 
-Capability-selection options are implemented in repository source but are not
-available in the published `0.1.0-preview.3` CLI or template. The updated
-artifacts require a coordinated release that includes the discovery APIs used
-by the generated application.
+Capability-selection options are implemented in repository source and the
+local `preview.4` candidate, but are not available in the published
+`preview.3` CLI or template. The candidate requires the coordinated packages
+that contain the discovery APIs used by the generated application.
 
 ---
 
-# 14. Milestone 14 — SliceForge Doctor / Diagnostics
+# Historical original-plan item: Milestone 14 — SliceForge Doctor / Diagnostics
 
-This is a later differentiating feature.
+This item retains its original plan numbering. The executed Milestone 14 was
+the Preview.4 Release Readiness Audit; expanded diagnostics remain future work.
 
 Future command:
 
@@ -1960,7 +1962,7 @@ Do not build this before the basic package and template are stable.
 
 ---
 
-# 14. Milestone 14 — Real-World Adoption
+# Historical original-plan item: Milestone 14 — Real-World Adoption
 
 Use a real project such as DispatchFlow as a consumer.
 
@@ -2311,7 +2313,12 @@ before SDK interaction. The CLI passes selected values to the existing
 template and remains a single-purpose orchestrator. Package validation
 exercises default CLI generation, a minimal configuration, and Validation-off
 / Observability-on generation from locally packed packages. These CLI and
-template changes remain unreleased at `0.1.0-preview.3` until the coordinated
-packages include the discovery APIs. Endpoint discovery remains deferred.
-Diagnostics remains planned as Milestone 14. Keep the CLI independent from
-runtime libraries and generated architecture owned by the template.
+template changes remain unreleased until the coordinated `preview.4` candidate
+is approved and published; the public `preview.3` packages do not contain the
+discovery APIs. Endpoint discovery remains deferred.
+
+Executed release milestones: Milestone 14 completed the Preview.4 Release
+Readiness Audit; Milestone 15 prepared and locally verified the Preview.4
+Release Candidate, with publication pending. Expanded diagnostics and
+real-world adoption remain future work. Keep the CLI independent from runtime
+libraries and generated architecture owned by the template.

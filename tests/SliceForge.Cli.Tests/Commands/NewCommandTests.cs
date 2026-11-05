@@ -363,9 +363,9 @@ public sealed class NewCommandTests
         int exitCode = await CliCommandFactory.InvokeAsync(["new", "-n", "DispatchFlow"], console, processes);
 
         Assert.Equal(0, exitCode);
-        Assert.Contains("SliceForge.Templates 0.1.0-preview.3 is not installed.", console.ErrorWriter.ToString(), StringComparison.Ordinal);
+        Assert.Contains("SliceForge.Templates 0.1.0-preview.4 is not installed.", console.ErrorWriter.ToString(), StringComparison.Ordinal);
         Assert.Contains("Install it now? [Y/n]", console.ErrorWriter.ToString(), StringComparison.Ordinal);
-        Assert.Equal(["new", "install", "SliceForge.Templates@0.1.0-preview.3"], processes.Calls[1]);
+        Assert.Equal(["new", "install", "SliceForge.Templates@0.1.0-preview.4"], processes.Calls[1]);
         Assert.Equal(["new", "sliceforge-api", "-n", "DispatchFlow", "--UseValidation", "true", "--UseObservability", "true"], processes.Calls[2]);
     }
 
@@ -394,7 +394,7 @@ public sealed class NewCommandTests
 
         Assert.Equal(1, exitCode);
         Assert.Contains("SliceForge.Templates is required.", console.ErrorWriter.ToString(), StringComparison.Ordinal);
-        Assert.Contains("dotnet new install SliceForge.Templates@0.1.0-preview.3", console.ErrorWriter.ToString(), StringComparison.Ordinal);
+        Assert.Contains("dotnet new install SliceForge.Templates@0.1.0-preview.4", console.ErrorWriter.ToString(), StringComparison.Ordinal);
         Assert.Single(processes.Calls);
         Assert.Equal(0, console.InputReadCount);
     }

@@ -12,7 +12,7 @@ $generatedRoot = Join-Path $validationRoot 'generated'
 $generatedAppRoot = Join-Path $generatedRoot 'DispatchFlow'
 $templateHive = Join-Path $validationRoot 'template-hive'
 $cliValidationRoot = Join-Path $validationRoot 'cli'
-$expectedVersion = '0.1.0-preview.3'
+$expectedVersion = '0.1.0-preview.4'
 $expectedRepository = 'https://github.com/Clinttttt/Slice-Forge'
 
 $expectedDependencies = [ordered]@{

@@ -3,17 +3,17 @@
 SliceForge is a composable Vertical Slice toolkit for modern .NET applications.
 It provides Result-based application flows, explicit command/query dispatch,
 validation, ASP.NET Core integration, observability, project templates, and CLI
-tooling without requiring MediatR. The `0.1.0-preview.3` packages target .NET
-10 as a coordinated preview set; APIs and package boundaries may still evolve
-before a stable release.
+tooling without requiring MediatR. The latest public NuGet release remains
+`0.1.0-preview.3`, targeting .NET 10. This checkout is being prepared as an
+unpublished, coordinated `0.1.0-preview.4` candidate; APIs and package
+boundaries may still evolve before a stable release.
 
-**Template development compatibility:** the template source in this checkout
-now uses handler and validator discovery APIs that are not present in the
-already-published `0.1.0-preview.3` library binaries. Its coordinated package
-pins remain unchanged during development. Local package validation rebuilds
-the SliceForge packages and maps all `SliceForge.*` IDs to that local feed;
-this template update must ship only with a coordinated release containing the
-discovery APIs.
+**Candidate compatibility:** the current template source uses handler and
+validator discovery APIs that are not present in the published `preview.3`
+library binaries. Its package pins now target the local `preview.4` candidate.
+Package validation rebuilds the seven packages and maps `SliceForge.*` IDs to
+that local feed. The candidate is not available from NuGet.org and must ship
+only as a coordinated release containing those APIs.
 
 ## Packages
 
@@ -27,7 +27,8 @@ discovery APIs.
 | `SliceForge.Templates` | A `dotnet new` template for a .NET 10 Minimal API consumer. |
 | `SliceForge.Tool` | A .NET global tool for creating applications from the template and checking the local environment. |
 
-Install only the capabilities your application uses. For example:
+The following installs are for the currently published `preview.3` packages.
+Install only the capabilities your application uses:
 
 ```powershell
 dotnet add package SliceForge.Core --version 0.1.0-preview.3
@@ -96,13 +97,12 @@ Observability package references selected at generation time.
 
 Install the .NET global tool and use its compact root screen or commands:
 
-The capability wizard and flags below are implemented in repository source,
-but are not available in the published `0.1.0-preview.3` CLI package yet.
-They require the coordinated release containing the handler/validator
-discovery APIs used by the current template.
+The published `preview.3` CLI does not include the capability wizard or flags.
+The following candidate commands are for use after the coordinated `preview.4`
+release is published; that release has not happened.
 
 ```powershell
-dotnet tool install --global SliceForge.Tool --version 0.1.0-preview.3
+dotnet tool install --global SliceForge.Tool --version 0.1.0-preview.4
 sliceforge
 sliceforge new -n DispatchFlow
 sliceforge new -n DispatchFlow --validation --observability
@@ -126,22 +126,29 @@ template is missing, installation is asked only when prompting is allowed.
 `doctor` checks for an installed SDK, a .NET 10 SDK, and the installed template;
 it does not install or restore anything.
 
-These capability questions and flags are implemented in the repository source
-but are not in the published `0.1.0-preview.3` CLI package. The updated CLI and
-template must be released with the coordinated packages; the published
-preview.3 packages also predate the handler/validator discovery APIs used by
-the current template source.
+These capability questions and flags are implemented in the local
+`preview.4` candidate, not in the published `preview.3` CLI. The published
+libraries also predate the discovery APIs used by the candidate template.
 
 ## Generate an application (preview)
 
-Install the template package and create a consumer application:
+The currently published `preview.3` template can be installed with:
 
 ```powershell
 dotnet new install SliceForge.Templates@0.1.0-preview.3
 dotnet new sliceforge-api -n DispatchFlow
 ```
 
-**Development template options (not yet published):** `UseValidation` and
+The updated candidate template and its generated `preview.4` package pins are
+not available from NuGet.org yet. After the coordinated release, install it
+and create a consumer application with:
+
+```powershell
+dotnet new install SliceForge.Templates@0.1.0-preview.4
+dotnet new sliceforge-api -n DispatchFlow
+```
+
+**Candidate template options (not yet published):** `UseValidation` and
 `UseObservability` are independent boolean options, each enabled by default.
 For a minimal API without either optional capability:
 

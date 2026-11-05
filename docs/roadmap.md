@@ -11,7 +11,7 @@ The implementation is intentionally incremental:
 7. Sample consumer API — completed
 8. Logging and observability — completed
 9. Configuration audit — completed with no configuration API
-10. Package validation — completed and exercised against published preview packages
+10. Package validation — completed and exercised through isolated local package consumers
 11. `dotnet new` template — completed as a preview package
 12. `SliceForge.Cli` global tool — completed as a preview package
 13. Milestone 11A: opt-in Runtime handler assembly discovery — completed
@@ -19,8 +19,20 @@ The implementation is intentionally incremental:
 15. Milestone 12: template integration with handler/validator discovery — completed
 16. Milestone 13A: optional Validation and Observability template options — completed
 17. Milestone 13B: CLI capability selection and equivalent flags — completed in source; coordinated release pending
-18. Diagnostics — planned
-19. Real-world adoption
+## Executed release milestones
+
+- Milestone 14 — Preview.4 Release Readiness Audit — completed.
+- Milestone 15 — Preview.4 Release Candidate Preparation — implemented
+  locally; publication pending.
+
+## Future work
+
+- Expanded diagnostics.
+- Real-world adoption.
+
+The latest public package set is `0.1.0-preview.3`. The coordinated
+`0.1.0-preview.4` source candidate includes Milestones 11A through 13B and is
+under local release validation; it is not available from NuGet.org.
 
 Milestone 5 adds Core-only Result-to-HTTP mapping in `SliceForge.AspNetCore`.
 Consumers own successful response semantics, explicit endpoint mapping,
@@ -88,10 +100,10 @@ Milestone 12 updates the generated application to use one application-owned
 assembly marker for both opt-in discovery APIs. It retains explicit endpoint
 mapping, the GET query example, and adds a validated greeting command whose
 validation Result maps to HTTP 400. Both direct `dotnet new` and CLI generation
-are exercised. Because the currently published `0.1.0-preview.3` libraries do
-not contain the discovery APIs, validation maps `SliceForge.*` package IDs to
-fresh local packages; this template update is unreleased until a coordinated
-package release includes those APIs.
+are exercised. The published `0.1.0-preview.3` libraries do not contain the
+discovery APIs, so candidate validation maps `SliceForge.*` package IDs to
+fresh local packages. The coordinated `0.1.0-preview.4` candidate includes
+those APIs and remains unpublished pending release approval.
 
 Milestone 13A adds independent, default-on `UseValidation` and
 `UseObservability` boolean parameters to the direct `sliceforge-api`
@@ -114,5 +126,5 @@ parameters, keeping generation architecture in `SliceForge.Templates`.
 Package validation exercises default CLI generation plus capability-selected
 CLI projects, including validation-disabled configurations, from locally
 packed packages. The capability-selection implementation is not in the
-published `0.1.0-preview.3` CLI/template; it awaits a coordinated package
-release containing the compatible discovery APIs.
+published `0.1.0-preview.3` CLI/template. It is included in the local,
+unpublished `0.1.0-preview.4` candidate with the compatible discovery APIs.

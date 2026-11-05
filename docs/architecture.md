@@ -70,9 +70,10 @@ Validation precedes Observability when both are enabled.
 
 The public package set is `SliceForge.Core`, `SliceForge.Runtime`,
 `SliceForge.Validation`, `SliceForge.AspNetCore`, `SliceForge.Observability`,
-`SliceForge.Templates`, and `SliceForge.Tool`. All are versioned together as
-`0.1.0-preview.3`
-and target `net10.0`. Project references pack as NuGet dependencies; sibling
+`SliceForge.Templates`, and `SliceForge.Tool`. The latest public coordinated
+release is `0.1.0-preview.3`; this checkout is being validated as an
+unpublished `0.1.0-preview.4` candidate. All packages target `net10.0`.
+Project references pack as NuGet dependencies; sibling
 assemblies are not embedded. AspNetCore carries a `Microsoft.AspNetCore.App`
 framework reference and has no Runtime dependency. The preview uses Apache-2.0
 metadata and is validated from a local package feed by a clean consumer with no
@@ -100,10 +101,10 @@ prompts and forwards selections to the template; it does not generate or edit
 application files. In source, interactive generation asks about Validation and
 Observability (both default to enabled), while capability flags and
 `--non-interactive` provide unattended choices. Redirected input uses template
-defaults unless flags are supplied. The `0.1.0-preview.3` published CLI does not
-yet include this capability-selection behavior. The updated CLI and template
-must ship with the coordinated packages that contain handler/validator
-discovery.
+defaults unless flags are supplied. The published `preview.3` CLI does not
+include this capability-selection behavior. The current CLI and template source
+are part of the local `preview.4` candidate and require the coordinated
+discovery-capable packages. Candidate packages are not yet published.
 
 `SliceForge.Tool` is the NuGet package for the `SliceForge.Cli` .NET global-tool implementation and owns only command-line UX and
 orchestration. It delegates project generation to the installed
