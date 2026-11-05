@@ -584,7 +584,13 @@ foreach ($capabilityCase in $capabilityCases) {
     Invoke-DotNet @('test', $caseSolution, '--no-build', '--no-restore', '-c', 'Release', '--verbosity', 'minimal')
 }
 Write-Output 'Installing and validating the isolated SliceForge CLI tool...'
-Remove-GeneratedDirectory $cliValidationRoot $cliValidationRoot $validationRoot
+try {
+    Remove-GeneratedDirectory $cliValidationRoot $cliValidationRoot $validationRoot
+}
+catch {
+    Write-Warning "The previous isolated CLI directory could not be cleared; using a new directory for this run. $($_.Exception.Message)"
+    $cliValidationRoot = Join-Path $validationRoot "cli-$([guid]::NewGuid().ToString('N'))"
+}
 $cliHome = Join-Path $cliValidationRoot 'home'
 $cliToolPath = Join-Path $cliValidationRoot 'tools'
 $cliGeneratedRoot = Join-Path $cliValidationRoot 'projects'
@@ -623,6 +629,10 @@ try {
     $helpResult = Invoke-Tool $cliExecutable @('--help')
     Assert-Condition ($helpResult.ExitCode -eq 0 -and $helpResult.Output -match 'Usage:') 'The installed CLI must provide standard command-line help.'
     Assert-Condition ($helpResult.Output -notmatch '╭|\x1b') 'CLI help must not use the decorative root screen or ANSI sequences.'
+    $newHelpResult = Invoke-Tool $cliExecutable @('new', '--help')
+    foreach ($optionName in @('--validation', '--no-validation', '--observability', '--no-observability', '--non-interactive')) {
+        Assert-Condition ($newHelpResult.ExitCode -eq 0 -and $newHelpResult.Output -match [regex]::Escape($optionName)) "CLI new help is missing $optionName."
+    }
 
     foreach ($versionArguments in @(@('--version'), @('version'))) {
         $versionResult = Invoke-Tool $cliExecutable $versionArguments
@@ -635,7 +645,7 @@ try {
 
     Push-Location $cliGeneratedRoot
     try {
-        $newResult = Invoke-Tool $cliExecutable @('new', '-n', 'CliDispatchFlow')
+        $newResult = Invoke-Tool $cliExecutable @('new', '-n', 'CliDispatchFlow', '--non-interactive')
     }
     finally {
         Pop-Location
@@ -702,6 +712,53 @@ try {
     Invoke-DotNet @('build', $cliGeneratedSolution, '--no-restore', '-c', 'Release', '--verbosity', 'minimal')
     Write-Output 'Running CLI-generated application tests...'
     Invoke-DotNet @('test', $cliGeneratedSolution, '--no-build', '--no-restore', '-c', 'Release', '--verbosity', 'minimal')
+
+    $cliCapabilityCases = @(
+        @{ Name = 'CliMinimalFlow'; Flags = @('--no-validation', '--no-observability'); UseValidation = $false; UseObservability = $false },
+        @{ Name = 'CliObservabilityFlow'; Flags = @('--no-validation', '--observability'); UseValidation = $false; UseObservability = $true }
+    )
+    foreach ($capabilityCase in $cliCapabilityCases) {
+        $name = $capabilityCase.Name
+        $caseRoot = Join-Path $cliGeneratedRoot $name
+        $generationArguments = @('new', '-n', $name, '--output', $caseRoot, '--non-interactive') + $capabilityCase.Flags
+        $generationResult = Invoke-Tool $cliExecutable $generationArguments
+        Assert-Condition ($generationResult.ExitCode -eq 0) "The installed CLI failed to generate $name with selected capabilities: $($generationResult.Output)"
+
+        Assert-GeneratedTemplateComposition $caseRoot $name $capabilityCase.UseValidation $capabilityCase.UseObservability
+        foreach ($relativePath in @(
+            "$name.slnx",
+            "src/$name.Api/ApplicationAssemblyMarker.cs",
+            "src/$name.Api/$name.Api.csproj",
+            "src/$name.Api/Program.cs",
+            "src/$name.Api/Features/Examples/GetExample/GetExampleQuery.cs",
+            "src/$name.Api/Features/Examples/CreateGreeting/CreateGreetingCommand.cs",
+            "tests/$name.Api.Tests/$name.Api.Tests.csproj",
+            "tests/$name.Api.Tests/ExampleEndpointTests.cs"
+        )) {
+            $fullPath = Join-Path $caseRoot $relativePath.Replace('/', [System.IO.Path]::DirectorySeparatorChar)
+            Assert-Condition (Test-Path -LiteralPath $fullPath -PathType Leaf) "$name is missing '$relativePath'."
+        }
+
+        $caseSource = @(Get-ChildItem -LiteralPath $caseRoot -Recurse -Filter '*.cs' -File | ForEach-Object { Get-Content -LiteralPath $_.FullName -Raw }) -join "`n"
+        Assert-Condition ($caseSource -match "namespace $name\.Api\.") "$name generated namespaces do not use the requested application name."
+        Assert-Condition ($caseSource -notmatch 'TemplateApp|SliceForge\.Cli|Clint\.') "$name contains an unreplaced or forbidden identity."
+
+        foreach ($projectFile in @(Get-ChildItem -LiteralPath $caseRoot -Recurse -Filter '*.csproj' -File)) {
+            [xml] $projectXml = Get-Content -LiteralPath $projectFile.FullName -Raw
+            foreach ($projectReference in $projectXml.SelectNodes("//*[local-name()='ProjectReference']")) {
+                $reference = $projectReference.GetAttribute('Include').Replace('\', [System.IO.Path]::DirectorySeparatorChar).Replace('/', [System.IO.Path]::DirectorySeparatorChar)
+                $referencePath = [System.IO.Path]::GetFullPath([System.IO.Path]::Combine($projectFile.DirectoryName, $reference))
+                Assert-Condition ($referencePath.StartsWith($caseRoot + [System.IO.Path]::DirectorySeparatorChar, [System.StringComparison]::OrdinalIgnoreCase)) "$name project reference escapes the generated application: $referencePath"
+            }
+        }
+
+        $caseSolution = Join-Path $caseRoot "$name.slnx"
+        Write-Output "Restoring CLI-generated $name from the local SliceForge feed and nuget.org..."
+        Invoke-DotNet @('restore', $caseSolution, '--configfile', $nugetConfig, '--packages', $cliPackageCache, '--verbosity', 'minimal')
+        Invoke-DotNet @('format', $caseSolution, '--verify-no-changes', '--no-restore')
+        Invoke-DotNet @('build', $caseSolution, '--no-restore', '-c', 'Release', '--verbosity', 'minimal')
+        Invoke-DotNet @('test', $caseSolution, '--no-build', '--no-restore', '-c', 'Release', '--verbosity', 'minimal')
+    }
 }
 finally {
     if ($null -eq $previousDotnetCliHome) {

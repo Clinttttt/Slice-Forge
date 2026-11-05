@@ -96,18 +96,41 @@ Observability package references selected at generation time.
 
 Install the .NET global tool and use its compact root screen or commands:
 
+The capability wizard and flags below are implemented in repository source,
+but are not available in the published `0.1.0-preview.3` CLI package yet.
+They require the coordinated release containing the handler/validator
+discovery APIs used by the current template.
+
 ```powershell
 dotnet tool install --global SliceForge.Tool --version 0.1.0-preview.3
 sliceforge
 sliceforge new -n DispatchFlow
+sliceforge new -n DispatchFlow --validation --observability
+sliceforge new -n DispatchFlow --no-validation --observability
+sliceforge new -n DispatchFlow --non-interactive
 sliceforge doctor
 ```
 
 The CLI delegates generation to `dotnet new sliceforge-api`; it does not own or
-duplicate generated application architecture. If the template is missing,
-interactive use asks before installing it. Redirected or CI use never prompts.
-The `doctor` command only checks for an installed SDK, a .NET 10 SDK, and the
-installed template; it does not install or restore anything.
+duplicate generated application architecture. On an interactive terminal,
+`new` asks whether to include Validation and Observability, shows the resulting
+package selection, then asks for confirmation before checking or generating the
+template. Both capabilities default to enabled. `--validation` /
+`--no-validation` and `--observability` / `--no-observability` choose them
+independently; a supplied capability flag skips the wizard, and conflicting
+positive/negative flags are rejected. `--non-interactive` disables all prompts
+and requires a name. Redirected input also skips prompts and uses template
+defaults unless capability flags are supplied. The CLI forwards choices to the
+native template parameters; it never edits generated files itself. If a
+template is missing, installation is asked only when prompting is allowed.
+`doctor` checks for an installed SDK, a .NET 10 SDK, and the installed template;
+it does not install or restore anything.
+
+These capability questions and flags are implemented in the repository source
+but are not in the published `0.1.0-preview.3` CLI package. The updated CLI and
+template must be released with the coordinated packages; the published
+preview.3 packages also predate the handler/validator discovery APIs used by
+the current template source.
 
 ## Generate an application (preview)
 
@@ -141,10 +164,10 @@ removable GET query slice and a greeting command slice. An application-owned
 assembly marker enables startup-only handler discovery and, when selected,
 validator discovery; endpoints remain mapped explicitly. Package references
 point to NuGet, not repository projects, and the generated API has no CLI
-dependency. The current `sliceforge new` CLI still generates the default
-configuration; interactive questions and capability flags belong to a later
-milestone. The updated template source and its option switches are unreleased
-until the coordinated packages contain the discovery APIs described above.
+dependency. Both optional capabilities are enabled by default. The current CLI
+source can select either independently; selection controls template-owned
+packages, registrations, and validator files. A generation with neither
+capability contains only Core, Runtime, and AspNetCore.
 
 ## Build and test
 

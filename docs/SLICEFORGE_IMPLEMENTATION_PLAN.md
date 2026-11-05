@@ -1878,7 +1878,7 @@ sliceforge                 compact branded root screen
 sliceforge --help          standard command-line help
 sliceforge --version       exact package version and newline
 sliceforge version         exact package version and newline
-sliceforge new [-n NAME] [-o DIRECTORY]
+sliceforge new [-n NAME] [-o DIRECTORY] [capability options]
 sliceforge doctor          local SDK and template checks only
 ```
 
@@ -1892,9 +1892,26 @@ redirected execution never prompts or installs automatically. Requested output
 directories and SDK exit codes are forwarded, and cancellation stops the child
 process and returns the conventional interrupt exit code.
 
+Milestone 13B adds default-on interactive selection for Validation and
+Observability. The wizard asks each question, summarizes the selected packages,
+and requires confirmation before template lookup. `--validation` /
+`--no-validation` and `--observability` / `--no-observability` are independent
+presence-based switches; contradictory pairs return exit code 2 before any
+prompt or SDK call. Any capability flag skips the wizard and requires a
+project name. `--non-interactive` also requires a name, disables every prompt,
+and uses template defaults unless capability flags are provided. Redirected
+input always skips prompts and uses defaults when choices are omitted. Both
+template defaults remain enabled.
+
+The CLI forwards explicit or interactive selections as the native
+`--UseValidation true|false` and `--UseObservability true|false` template
+parameters in stable order. Unattended generation with no capability flags
+omits both parameters and relies on template defaults. The CLI does not edit
+project files, package references, or generated source.
+
 `doctor` uses local SDK-list and installed-template-list commands only. It does
 not access package feeds, install templates, restore projects, or inspect
-consumer source. Expanded project diagnostics remain Milestone 11 work.
+consumer source. Expanded project diagnostics remain Milestone 14 work.
 
 Package validation inspects the `DotnetTool` package metadata and payload,
 checks its System.CommandLine dependency and absence of SliceForge runtime
@@ -1903,9 +1920,14 @@ executes root/help/version/doctor/new. CLI-driven generation is restored from
 the local package feed and nuget.org, then built and tested. CI repeats these
 checks and never publishes packages.
 
+Capability-selection options are implemented in repository source but are not
+available in the published `0.1.0-preview.3` CLI or template. The updated
+artifacts require a coordinated release that includes the discovery APIs used
+by the generated application.
+
 ---
 
-# 13. Milestone 13 — SliceForge Doctor / Diagnostics
+# 14. Milestone 14 — SliceForge Doctor / Diagnostics
 
 This is a later differentiating feature.
 
@@ -2230,6 +2252,7 @@ Completed milestones:
 - Milestone 11B: opt-in Validation validator assembly discovery
 - Milestone 12: template integration with handler and validator discovery
 - Milestone 13A: independent Validation and Observability template capability options
+- Milestone 13B: interactive and explicit CLI capability selection
 
 Runtime is separate from Core and uses exact concrete-message routing. It
 supports explicit handler registration and optional startup-only discovery
@@ -2280,8 +2303,15 @@ Milestone 13A then makes Validation and Observability independently optional
 at `dotnet new` generation time using default-on boolean parameters.
 Unselected capabilities leave no package reference, version pin, DI call, or
 unused sample validator; isolated validation exercises all four combinations.
-The CLI still generates the default baseline and does not yet expose capability
-questions or flags. Its source remains unreleased until a coordinated package
-version includes the discovery APIs. Endpoint discovery remains deferred.
-Diagnostics remains planned. Keep the CLI independent from runtime libraries
-and keep generated architecture owned by the directly usable template.
+Milestone 13B adds the CLI wizard, positive/negative capability switches, and
+`--non-interactive`. Explicit flags skip prompts and require a project name;
+redirected input skips all prompts and uses template defaults when choices are
+omitted. Contradictory positive/negative pairs are rejected with exit code 2
+before SDK interaction. The CLI passes selected values to the existing
+template and remains a single-purpose orchestrator. Package validation
+exercises default CLI generation, a minimal configuration, and Validation-off
+/ Observability-on generation from locally packed packages. These CLI and
+template changes remain unreleased at `0.1.0-preview.3` until the coordinated
+packages include the discovery APIs. Endpoint discovery remains deferred.
+Diagnostics remains planned as Milestone 14. Keep the CLI independent from
+runtime libraries and generated architecture owned by the template.

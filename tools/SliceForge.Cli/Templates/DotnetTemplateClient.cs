@@ -31,6 +31,8 @@ internal sealed class DotnetTemplateClient(IProcessRunner processRunner)
     public Task<ProcessResult> CreateAsync(
         string name,
         string? outputDirectory,
+        bool? useValidation,
+        bool? useObservability,
         CancellationToken cancellationToken)
     {
         List<string> arguments = ["new", TemplateIdentity.ShortName, "-n", name];
@@ -39,6 +41,14 @@ internal sealed class DotnetTemplateClient(IProcessRunner processRunner)
         {
             arguments.Add("--output");
             arguments.Add(outputDirectory);
+        }
+
+        if (useValidation.HasValue && useObservability.HasValue)
+        {
+            arguments.Add("--UseValidation");
+            arguments.Add(useValidation.Value.ToString().ToLowerInvariant());
+            arguments.Add("--UseObservability");
+            arguments.Add(useObservability.Value.ToString().ToLowerInvariant());
         }
 
         return processRunner.RunAsync("dotnet", arguments, cancellationToken);

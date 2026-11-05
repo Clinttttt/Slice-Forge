@@ -38,14 +38,44 @@ internal static class CliCommandFactory
         {
             Description = "Output directory"
         };
+        Option<bool> validationOption = new("--validation")
+        {
+            Description = "Include SliceForge.Validation and FluentValidation (default: enabled)."
+        };
+        Option<bool> noValidationOption = new("--no-validation")
+        {
+            Description = "Exclude SliceForge.Validation and FluentValidation."
+        };
+        Option<bool> observabilityOption = new("--observability")
+        {
+            Description = "Include SliceForge.Observability (default: enabled)."
+        };
+        Option<bool> noObservabilityOption = new("--no-observability")
+        {
+            Description = "Exclude SliceForge.Observability."
+        };
+        Option<bool> nonInteractiveOption = new("--non-interactive")
+        {
+            Description = "Do not prompt; require --name and use template defaults unless capabilities are selected."
+        };
         Command newCommand = new("new", "Create a SliceForge application");
         newCommand.Options.Add(nameOption);
         newCommand.Options.Add(outputOption);
+        newCommand.Options.Add(validationOption);
+        newCommand.Options.Add(noValidationOption);
+        newCommand.Options.Add(observabilityOption);
+        newCommand.Options.Add(noObservabilityOption);
+        newCommand.Options.Add(nonInteractiveOption);
         newCommand.SetAction(async (parseResult, cancellationToken) =>
             await new NewCommand(console, new DotnetTemplateClient(processRunner))
                 .ExecuteAsync(
                     parseResult.GetValue(nameOption),
                     parseResult.GetValue(outputOption),
+                    parseResult.GetValue(validationOption),
+                    parseResult.GetValue(noValidationOption),
+                    parseResult.GetValue(observabilityOption),
+                    parseResult.GetValue(noObservabilityOption),
+                    parseResult.GetValue(nonInteractiveOption),
                     cancellationToken)
                 .ConfigureAwait(false));
 

@@ -18,7 +18,7 @@ The implementation is intentionally incremental:
 14. Milestone 11B: opt-in Validation validator assembly discovery — completed
 15. Milestone 12: template integration with handler/validator discovery — completed
 16. Milestone 13A: optional Validation and Observability template options — completed
-17. Milestone 13B: CLI capability selection and equivalent flags — planned
+17. Milestone 13B: CLI capability selection and equivalent flags — completed in source; coordinated release pending
 18. Diagnostics — planned
 19. Real-world adoption
 
@@ -101,5 +101,18 @@ FluentValidation dependency and the sample validator, and adjusts the
 generated HTTP test expectations. The Core + Runtime +
 AspNetCore Minimal API baseline and explicit endpoint mapping remain unchanged.
 Package validation generates all four combinations, restores/builds/tests each
-from freshly packed local packages, and preserves the CLI's default experience.
-Interactive capability prompts and CLI forwarding remain Milestone 13B work.
+from freshly packed local packages, and preserves default-on behavior.
+
+Milestone 13B adds the interactive CLI selection experience and explicit
+`--validation`, `--no-validation`, `--observability`, and
+`--no-observability` flags. Interactive generation summarizes the selected
+packages and requires confirmation before template lookup. Either explicit
+capability flags or `--non-interactive` skips prompts; redirected input also
+skips prompts and uses template defaults. Both optional capabilities remain
+enabled by default. The CLI translates choices into the existing template
+parameters, keeping generation architecture in `SliceForge.Templates`.
+Package validation exercises default CLI generation plus capability-selected
+CLI projects, including validation-disabled configurations, from locally
+packed packages. The capability-selection implementation is not in the
+published `0.1.0-preview.3` CLI/template; it awaits a coordinated package
+release containing the compatible discovery APIs.

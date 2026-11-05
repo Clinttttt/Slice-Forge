@@ -95,12 +95,15 @@ SliceForge package references plus explicit FluentValidation, and pre-handler
 validation.
 
 The application-owned marker opts into startup-only handler discovery and,
-when Validation is selected, validator discovery. The CLI still uses the
-default template settings and does not yet expose capability flags. Isolated
-package validation covers all four direct-template capability combinations
-and default CLI generation using freshly packed local SliceForge packages.
-This template update remains unreleased until the coordinated packages include
-the discovery APIs, which are absent from published `preview.3` binaries.
+when Validation is selected, validator discovery. The CLI owns capability
+prompts and forwards selections to the template; it does not generate or edit
+application files. In source, interactive generation asks about Validation and
+Observability (both default to enabled), while capability flags and
+`--non-interactive` provide unattended choices. Redirected input uses template
+defaults unless flags are supplied. The `0.1.0-preview.3` published CLI does not
+yet include this capability-selection behavior. The updated CLI and template
+must ship with the coordinated packages that contain handler/validator
+discovery.
 
 `SliceForge.Tool` is the NuGet package for the `SliceForge.Cli` .NET global-tool implementation and owns only command-line UX and
 orchestration. It delegates project generation to the installed
